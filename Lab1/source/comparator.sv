@@ -4,7 +4,6 @@
 // a is greater than b, gt = 1, lt = 0, eq = 0
 // a is less than b, gt = 0, lt = 1, eq = 0
 // a is equal to b, gt = 0, lt = 0, eq = 1
-
 // Use a tab size of 2 spaces for best viewing results
 
 
@@ -12,31 +11,51 @@ module comparator
 (
 	input wire [15:0] a,
 	input wire [15:0] b,
-	output wire gt,
-	output wire lt,
-	output wire eq
+	output reg gt,
+	output reg lt,
+	output reg eq
 );
 
-	wire gte;
-	wire lte;
+	reg gte;
+	reg lte;
 
 	always @ (a, b) begin: COM
-		if (not (a > b))
-			lte <= 1'b1;
-		if (!(b > a)
-			assign gte = 1'b1;
-		
-		if (not (lte == 1'b1))
-			GT = 1'b1;
-			LT == 1'b0;
-			EQ = 1'b0;
-		else if (not (gte == 1))
-			GT = 1'b0;
-			LT = 1'b1;
-			EQ = 1'b0;
-		else
-			GT = 1'b0;
-			LT = 1'b0;
-			EQ = 1'b1;
+		if (!(a > b) && !(a == b)) begin
+			lte = 1'b1;
+			gte = 1'b0;
+		end
+		else if (!(b > a) && !(a == b)) begin 
+			gte = 1'b1;
+			lte = 1'b0;
+		end
+		else if (a == b) begin
+			gte = 1'b1;
+			lte = 1'b1;
+		end
+		else begin
+			gte = 1'b0;
+			lte = 1'b0;
+		end
+
+		if (!(lte == 1'b1) & (gte == 1'b1)) begin
+			gt = 1'b1;
+			lt = 1'b0;
+			eq = 1'b0;
+		end
+		else if (!(gte == 1'b1) & (lte == 1'b1)) begin
+			gt = 1'b0;
+			lt = 1'b1;
+			eq = 1'b0;
+		end
+		else if ((gte == 1'b1) & (lte == 1'b1)) begin
+			gt = 1'b0;
+			lt = 1'b0;
+			eq = 1'b1;
+		end
+		else begin
+			gt = 1'b0;
+			lt = 1'b0;
+			eq = 1'b0;
+		end
 	end
-endmodule;
+endmodule
