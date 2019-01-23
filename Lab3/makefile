@@ -356,7 +356,7 @@ write_file -format verilog -hierarchy -output "mapped/$(MOD_NAME).v"
 
 # Second Compilation Run. Repeat Steps 2-5
 # Step 2: put max delay constraints in the second pass only
-set_max_delay 0.7 -from "b[0]" -to "sum[15]"
+set_max_delay 0.6 -from "b[0]" -to "sum[15]"
 
 # Step 3: Compile the design
 set_structure true -design $(MOD_NAME) -boolean true -boolean_effort medium
