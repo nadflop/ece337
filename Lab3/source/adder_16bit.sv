@@ -8,6 +8,7 @@
 // Version:     1.0  Initial Design Entry
 // Description: n-bit Full adder
 
+`timescale 1ns / 100ps
 module adder_16bit
 (
 	input wire [15:0] a,
@@ -16,8 +17,30 @@ module adder_16bit
 	output wire [15:0] sum,
 	output wire overflow
 );
+	integer i;
+	//input value checking for a and b
+	always_comb
+	begin
+		for(i = 0; i < 16; i = i + 1)
+		begin
+			assert ((a[i] == 1'b1) || (a[i] == 1'b0))
+			else $error("Input 'a[%d]' of component is not a digital logic value", i); 
 
+			assert ((b[i] == 1'b1) || (b[i] == 1'b0))
+			else $error("Input 'b[%d]' of component is not a digital logic value", i); 
+		end
+	end
+
+	//input value checking for carry_in
+	always @ (carry_in)
+	begin
+		assert ((carry_in == 1'b1) || (carry_in == 1'b0))
+		else $error("Input 'carry_in' of component is not a digital logic value"); 
+	end
+
+	//call adder_nbit to perform the calculations
 	adder_nbit #(16) B16(.a(a), .b(b), .carry_in(carry_in), .sum(sum), .overflow(overflow));
+	
 
 endmodule
 

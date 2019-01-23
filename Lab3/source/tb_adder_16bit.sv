@@ -53,7 +53,7 @@ adder_16bit DUT (.a(tb_a), .b(tb_b), .carry_in(tb_carry_in), .sum(tb_sum), .over
 initial begin
   // Create the test-vector array with enough slots for test cases
   // STUDENT TODO: Update the array declaration to have enough slots
-  tb_test_cases = new[6];
+  tb_test_cases = new[12];
 
   // First Test Case/Test-Vector
   tb_test_cases[0].test_name = "Zeros Check";
@@ -63,34 +63,70 @@ initial begin
   
   // STUDENT TODO: Add your additional test cases here after increasing the array size
   // Second Test Case/Test-Vector
-  tb_test_cases[1].test_name = "A is large number, B is small number";
+  tb_test_cases[1].test_name = "A > B, Cin = 0";
   tb_test_cases[1].test_a    = 16'd24000;
-  tb_test_cases[1].test_b    = 16'd1;
+  tb_test_cases[1].test_b    = 16'd43;
   tb_test_cases[1].test_cin  = 1'b0;
 
-  //Third Test Case/Test-Vector
-  tb_test_cases[2].test_name = "A is small number, B is large number";
-  tb_test_cases[2].test_a    = 16'd1;
-  tb_test_cases[2].test_b    = 16'd32000;
-  tb_test_cases[2].test_cin  = 1'b0;
+  // Third Test Case/Test-Vector
+  tb_test_cases[2].test_name = "A > B, Cin = 1";
+  tb_test_cases[2].test_a    = 16'd9217;
+  tb_test_cases[2].test_b    = 16'd71;
+  tb_test_cases[2].test_cin  = 1'b1;
 
-  // Fourth Test Case/Test-Vector
-  tb_test_cases[3].test_name = "A is large number, B is small number";
-  tb_test_cases[3].test_a    = 16'd24000;
-  tb_test_cases[3].test_b    = 16'd1;
+  //Fourth Test Case/Test-Vector
+  tb_test_cases[3].test_name = "A < B, Cin = 0";
+  tb_test_cases[3].test_a    = 16'd1;
+  tb_test_cases[3].test_b    = 16'd35007;
   tb_test_cases[3].test_cin  = 1'b0;
 
-  //Fifth Test Case/Test-Vector
-  tb_test_cases[4].test_name = "A is large number, B is large number";
-  tb_test_cases[4].test_a    = 16'd24000;
-  tb_test_cases[4].test_b    = 16'd32400;
-  tb_test_cases[4].test_cin  = 1'b0;
+  // Fifth Test Case/Test-Vector
+  tb_test_cases[4].test_name = "A < B, Cin = 1";
+  tb_test_cases[4].test_a    = 16'd85;
+  tb_test_cases[4].test_b    = 16'd65534;
+  tb_test_cases[4].test_cin  = 1'b1;
 
-  // Sixth Test Case/Test-Vector
-  tb_test_cases[5].test_name = "A is small number, B is small number";
-  tb_test_cases[5].test_a    = 16'd3;
-  tb_test_cases[5].test_b    = 16'd2;
+  //Sixth Test Case/Test-Vector
+  tb_test_cases[5].test_name = "large nums";
+  tb_test_cases[5].test_a    = 16'd13502;
+  tb_test_cases[5].test_b    = 16'd72014;
   tb_test_cases[5].test_cin  = 1'b0;
+
+  // Seven Test Case/Test-Vector
+  tb_test_cases[6].test_name = "small nums";
+  tb_test_cases[6].test_a    = 16'd3;
+  tb_test_cases[6].test_b    = 16'd8;
+  tb_test_cases[6].test_cin  = 1'b0;
+
+  //Eight Test Case/Test-Vector
+  tb_test_cases[7].test_name = "small nums";
+  tb_test_cases[7].test_a    = 16'd593;
+  tb_test_cases[7].test_b    = 16'd610;
+  tb_test_cases[7].test_cin  = 1'b1;
+  
+  //9th Test Case/Test-Vector
+  tb_test_cases[8].test_name = "large nums";
+  tb_test_cases[8].test_a    = 16'd1930;
+  tb_test_cases[8].test_b    = 16'd6071;
+  tb_test_cases[8].test_cin  = 1'b0;
+  
+  //10th Test Case/Test-Vector
+  tb_test_cases[9].test_name = "A > B, Cin = 1";
+  tb_test_cases[9].test_a    = 16'd60110;
+  tb_test_cases[9].test_b    = 16'd314;
+  tb_test_cases[9].test_cin  = 1'b1;
+
+  //11th Test Case/Test-Vector
+  tb_test_cases[10].test_name = "Zeros check with carry in";
+  tb_test_cases[10].test_a    = 16'd0;
+  tb_test_cases[10].test_b    = 16'd0;
+  tb_test_cases[10].test_cin  = 1'b1;
+
+  //12th Test Case/Test-Vector
+  tb_test_cases[11].test_name = "A < B, Cin = 1";
+  tb_test_cases[11].test_a    = 16'd0110;
+  tb_test_cases[11].test_b    = 16'd314;
+  tb_test_cases[11].test_cin  = 1'b1;
 end
 
 // Handle expected results bit-slice mappings
