@@ -1,10 +1,10 @@
 // $Id: $
-// File name:   tb_sync_low.sv
+// File name:   tb_sync_high.sv
 // Created:     2/3/2019
 // Author:      Nur Nadhira Aqilah Binti Mohd Shah
 // Lab Section: 2
 // Version:     1.0  Initial Design Entry
-// Description: testbench for sync_low
+// Description: testbench for sync_high
 
 // 0.5um D-FlipFlop Timing Data Estimates:
 // Data Propagation delay (clk->Q): 670ps
@@ -13,7 +13,7 @@
 
 `timescale 1ns / 10ps
 
-module tb_sync_low();
+module tb_sync_high();
 
   // Define local parameters used by the test bench
   localparam  CLK_PERIOD    = 1;
@@ -99,7 +99,7 @@ module tb_sync_low();
   end
   
   // DUT Port map
-  sync_low DUT(.clk(tb_clk), .n_rst(tb_n_rst), .async_in(tb_async_in), .sync_out(tb_sync_out));
+  sync_high DUT(.clk(tb_clk), .n_rst(tb_n_rst), .async_in(tb_async_in), .sync_out(tb_sync_out));
   
   // Test bench main process
   initial
@@ -196,7 +196,7 @@ module tb_sync_low();
     // Move away from risign edge and allow for propagation delays before checking
     #(CHECK_DELAY);
     check_output_meta("after processing delay");
-
+    
     // ************************************************************************
     // Test Case 4: Hold Violation with Input as a '1'
     // ************************************************************************
