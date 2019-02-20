@@ -8,52 +8,65 @@
 
 module flex_counter
 #(
-	NUM_CNT_BITS = 4
+	parameter NUM_CNT_BITS = 4
 )
 (
-	input clk,
-	input n_rst, //asynchronous, active low, reset all reg and ff to 0
-	input clear, //active high, clear count to 0
-	input count_enable, //active high, increment 
-	input reg [NUM_CNT_BITS-1:0] rollover_val,
-	output reg [NUM_CNT_BITS-1:0] count_out,
+	input wire clk,
+	input wire n_rst,
+	input wire clear,
+	input wire count_enable,
+	input wire [NUM_CNT_BITS-1:0]rollover_val,
+	output reg [NUM_CNT_BITS-1:0]count_out,
 	output reg rollover_flag
 );
 	reg [NUM_CNT_BITS-1:0] next_count;
-	reg [NUM_CNT_BITS-1:0] count;
-	reg next_flag;
 	reg flag;
+ 	always_comb
+	begin
+		next_count = count_out;
+		flag = rollover_flag;
+		if (clear)
+		begin
+			next_count = 0;
+			flag = 0;
+		end		
+		else if (count_enable)
+		begin
+			if (rollover_flag == 1'b1)
+			begin
+				next_count = 1;
+			end
+			else begin
+				next_count = count_out + 1'b1;
+			end
 
-	always_comb
-	begin: COUNTER
-		next_flag = flag;
- 		next_count = count;
-		if (clear == 1'b1)
-		   next_count = 4'b0000;
-		else if (count_enable == 1'b1) begin
-		   next_count = count + 1;
-		   if (next_count == rollover_val)
-		       next_flag = 1'b1;
-		   else
-		       next_flag = 1'b0;
-		   if (flag == 1'b1)
-		       next_count = 4'b0001;
+			if ((count_out + 1 == rollover_val) || (count_out == 1 && rollover_val == 1))
+			begin
+				flag = 1'b1;
+			end
+			else
+			begin
+				flag = 1'b0;
+			end
 		end
+		
+		
+		
 	end
 	
-	always_ff @ (posedge clk, negedge n_rst)
-	begin: REG_LOGIC
-		if (n_rst == 1'b0) begin
-		   count <= 0;
-		   flag <= 0;
+	always_ff @(negedge n_rst, posedge clk)
+	begin
+		if(n_rst == 0)
+		begin
+			count_out <= 0;
+			rollover_flag <= 1'b0;
 		end
-		else begin
-		   count <= next_count;
-		   flag <= next_flag;
+		else
+		begin
+			count_out <= next_count;
+			rollover_flag <= flag;
 		end
 	end
-
-	assign count_out = count;
-	assign rollover_flag = flag;
-	
 endmodule
+		
+		

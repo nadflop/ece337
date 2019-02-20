@@ -16,36 +16,30 @@ module flex_stp_sr
     input n_rst,
     input shift_enable,
     input serial_in,
-    output reg [NUM_BITS-1:0] parallel_out
+    output logic [NUM_BITS-1:0] parallel_out
 );
     reg [NUM_BITS-1:0] next_data;
-    reg [NUM_BITS-1:0] data;
-    int i;
 
     always_comb
     begin: SHIFT 
 	if (shift_enable == 1'b1) begin
 	    if (SHIFT_MSB == 1'b1)
-		next_data = {data[NUM_BITS-2:0], serial_in};
+		next_data = {parallel_out[NUM_BITS-2:0], serial_in};
 	    else
-		next_data = {serial_in, data[NUM_BITS-1:1]};
+		next_data = {serial_in, parallel_out[NUM_BITS-1:1]};
 	end
 	else
-	    next_data = data;
+	    next_data = parallel_out;
     end
 
     always_ff @ (posedge clk, negedge n_rst) 
     begin: REG
-	if (n_rst == 1'b0) begin
-	    for (i = 0; i < NUM_BITS; i++)
-		data[i] <= 1;
-	end
-	else begin
-	    data <= next_data;
-	end
+	if (n_rst == 1'b0) 
+	    parallel_out <= '1;
+	else 
+	    parallel_out <= next_data;
     end
 
-    assign parallel_out = data;
 
 endmodule
     
