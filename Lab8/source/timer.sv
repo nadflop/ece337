@@ -1,0 +1,42 @@
+// $Id: $
+// File name:   timer.sv
+// Created:     2/18/2019
+// Author:      Nur Nadhira Aqilah Binti Mohd Shah
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: timer block for uart receiver
+
+module timer
+(
+  input clk,
+  input n_rst,
+  input enable_timer,
+  output shift_enable,
+  output packet_done 
+);
+  reg [3:0] clock_count;
+  reg [3:0] bit_count;
+
+  flex_counter 
+  SHIFT(
+    .clk(clk),
+    .n_rst(n_rst),
+    .clear(packet_done),
+    .count_enable(enable_timer),
+    .rollover_val(4'd10),
+    .count_out(clock_count),
+    .rollover_flag(shift_enable)
+  );
+
+
+  flex_counter 
+  PCKT(
+    .clk(clk),
+    .n_rst(n_rst),
+    .clear(packet_done),
+    .count_enable(shift_enable),
+    .rollover_val(4'd9),
+    .count_out(bit_count),
+    .rollover_flag(packet_done)
+  );
+endmodule
