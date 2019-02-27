@@ -1,0 +1,48 @@
+idle: if (data_ready = 0) goto idle; //wait until data ready = 1
+      if (load_coeff) goto load;
+
+load: 
+      case(state) begin
+        start: modwait = 0;
+	       if(load_coeff) goto load1;
+	load1:  reg[9] = coef_1;
+		modwait = 1;
+	wait1: modwait = 0;
+	       if(load_coeff) goto load2;
+	load2: reg[8] = coef_2;
+		modwait = 1;
+	wait2: modwait = 0;
+	       if(load_coeff) goto load3;
+	load3: reg[7] = coef_3;
+		modwait = 1;
+	wait3: modwait = 0;
+	       if(load_coeff) goto load4;
+	load4: reg[6] = coef_4;
+	       modwait = 1;
+	       goto idle;	
+      end
+
+store: if (data_ready = 0) goto idle;
+       reg[5] = data;
+       err = 0;
+zero:  reg[0] = 0;
+sort1: reg[1] = reg[2]; //reorder registers
+sort2: reg[2] = reg[3]; //reorder registers
+sort3: reg[3] = reg[4]; //reorder registers
+sort4: reg[4] = reg[5]; //reorder registers
+mul1:  reg[10] = reg[1] * reg[6];//sample4 * F3
+add1:  reg[0] = reg[0] + reg[10];
+       if (V) goto eidle;
+mul2:  reg[10] = reg[2] * reg[7];//sample3 * F2
+sub1:  reg[0] = reg[0] - reg[10];
+       if (V) goto eidle;
+mul3:  reg[10] = reg[3] * reg[8];//sample2 * F1
+add2:  reg[0] = reg[0] + reg[10];
+       if(V) goto eidle;
+mul4:  reg[10] = reg[4] * reg[9];//sample1 * F0
+sub2:  reg[0] = reg[0] - reg[10];
+       if(V) goto eidle;
+       else goto idle;
+eidle: err = 1;
+       if (data_ready=1) goto store;
+       if (data_ready = 0) goto eidle;

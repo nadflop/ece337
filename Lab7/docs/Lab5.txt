@@ -1,0 +1,24 @@
+How are the image files different? Does this makes sense given the filter design built in the lab? Why or why not?
+	All the images files are different because they are filtered based on the colors R,G,B. In the first picture, the red bits are filtered out while the second picture, the green bits is filtered out and in the last picture, the blue bits is filtered out. It make sense given the fiter design built in the lab. This is because, the filter designed in lab is basically removing the specific bit in the image block.
+
+What is the general syntax for each of the file IO functions used in the provided test bench (tb_fir_filter_image.sv)
+	to open a file: $fopen(INPUT_FILENAME, <flag>) 
+
+	scan a file: $fscanf(INPUT_FILE, <specifier>, signal )
+	
+	getting the pointer of the file: $fseek(INPUT_FILE, OFFSET, <specifier>)
+	
+	tells where you are in the file: $ftell(input_file)
+        
+	writing to a file: $fwrite(OUTPUT_FILE, <specifier>, signal )
+        
+	closing a file: $fclose(FILENAME)
+
+What are the different format specifiers available for use in file functions like $fscanf(...)?
+	%c - single character
+	%s - string
+	%d - decimal
+	%e,%E,%f,%g,%G - floating point
+	%o - octal integer
+	%u - unsigned decimal integer
+	%x,%X - hexadecimal integer

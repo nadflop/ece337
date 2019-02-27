@@ -1,0 +1,5 @@
+Minimum amount of time data_ready must remain asserted to ensure correct operatorion:
+	2 clock cycles
+Minimum amount of time data must remain valid after data_ready is asserted in order to ensure correct operation:
+	3 clock cycles
+
