@@ -1,17 +1,4 @@
-// $Id: $
-// File name:   tb_apb_uart_rx.sv
-// Created:     3/3/2019
-// Author:      Alexander J Wilson
-// Lab Section: 337-04
-// Version:     1.0  Initial Design Entry
-// Description: asdf
-// $Id: $
-// File name:   tb_apb_slave.sv
-// Created:     10/1/2018
-// Author:      Tim Pritchett
-// Lab Section: 9999
-// Version:     1.0  Initial Design Entry
-// Description: Starter bus model based test bench for the apb-slave module
+
 
 `timescale 1ns / 10ps
 
@@ -39,7 +26,7 @@ localparam ADDR_RX_DATA  = 3'd6;
 // APB-Slave reset value constants
 // Student TODO: Update these based on the reset values for your config registers
 localparam RESET_BIT_PERIOD = 14'd10;
-localparam RESET_DATA_SIZE  = 8'd8;
+localparam RESET_DATA_SIZE  = 8'd5;
 
 //*****************************************************************************
 // Declare TB Signals (Bus Model Controls)
@@ -232,7 +219,7 @@ endtask
     input  [7:0] data;
     input  stop_bit;
     input  time data_period;
-    
+    input [3:0]data_size;
     integer i;
   begin
     // First synchronize to away from clock's rising edge
@@ -243,7 +230,7 @@ endtask
     #data_period;
     
     // Send data bits
-    for(i = 0; i < 8; i = i + 1)
+    for(i = 0; i < data_size; i = i + 1)
     begin
       tb_serial_in = data[i];
       #data_period;
@@ -387,12 +374,71 @@ initial begin
   enqueue_transaction(1'b1, 1'b1, ADDR_BIT_CR1, {2'b00, tb_test_bit_period[13:8]}, 1'b0);
   execute_transactions(2);
 
-  send_packet(tb_test_data, tb_test_stop_bit, tb_bit_period);
+  send_packet(tb_test_data, tb_test_stop_bit, tb_bit_period,4'd8);
 
   @(posedge tb_clk);
 
   enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA , 8'b11010101, 1'b0);
   execute_transactions(1);
+
+
+
+  //*****************************************************************************
+  // Test Case: Configure the Bit Period Settings
+  //*****************************************************************************
+  tb_test_case     = "Send 8-bit serial in";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  
+  enqueue_transaction(1'b1, 1'b1, ADDR_DATA_CR, 4'd7, 1'b0);
+	  execute_transactions(1);
+  enqueue_transaction(1'b1, 1'b0, ADDR_DATA_CR, 4'd7,1'b0);
+  execute_transactions(1);
+ tb_test_case     = "Send 8-bit serial in";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  
+  enqueue_transaction(1'b1, 1'b1, 3'd5, 4'd7, 1'b1);
+	  execute_transactions(1);
+  enqueue_transaction(1'b1, 1'b0, 3'd5, 4'd0,1'b1);
+  execute_transactions(1);
+
+  //enqueue_transaction(1'b1, 1'b1, 3'd5, 4'd0, 1'b1);
+	  //execute_transactions(1);
+  //*****************************************************************************
+  // Test Case: 7-bit test
+  //*****************************************************************************
+  tb_test_case     = "Send 7-bit serial in";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  enqueue_transaction(1'b1, 1'b1, 3'h4, 8'h07, 1'b0);
+  enqueue_transaction(1'b1, 1'b0, 3'h4, 8'h07, 1'b0);
+  execute_transactions(2);
+
+  send_packet(tb_test_data, tb_test_stop_bit, tb_bit_period, 4'd7);
+
+  @(posedge tb_clk);
+
+  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA , 8'b01010101, 1'b0);
+  execute_transactions(1);
+
+  //*****************************************************************************
+  // Test Case: 5-bit test
+  //*****************************************************************************
+  tb_test_case     = "Send 5-bit serial in";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  enqueue_transaction(1'b1, 1'b1, 3'h4, 8'h05, 1'b0);
+  enqueue_transaction(1'b1, 1'b0, 3'h4, 8'h05, 1'b0);
+  execute_transactions(2);
+
+  send_packet(tb_test_data, tb_test_stop_bit, tb_bit_period, 4'd5);
+
+  @(posedge tb_clk);
+
+  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA , 8'b00010101, 1'b0);
+  execute_transactions(1);
+
 
 end
 

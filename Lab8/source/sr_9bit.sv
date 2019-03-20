@@ -12,22 +12,32 @@ module sr_9bit
   input wire n_rst,  //asynchronous, active low
   input wire shift_strobe, //active high
   input wire serial_in,    //active high
-  output wire [7:0] packet_data,
+  input wire [3:0] data_size,
+  output reg [7:0] packet_data,
   output wire stop_bit
 );
   
-  //reg [8:0] parallel_out;
+  reg [7:0] parallel_out;
 
   flex_stp_sr #(
-    .NUM_BITS(9), .SHIFT_MSB(1)
+    .NUM_BITS(9), .SHIFT_MSB(0)
   ) 
   CORE(
     .clk(clk),
     .n_rst(n_rst),
     .shift_enable(shift_strobe),
     .serial_in(serial_in),
-    .parallel_out({packet_data[0],packet_data[1],packet_data[2],packet_data[3],packet_data[4],packet_data[5],packet_data[6],packet_data[7],stop_bit})
+    .parallel_out({stop_bit,parallel_out})
   );
   
+  always_comb 
+  begin: OUT
+    packet_data = '0;
+    case(data_size)
+	4'd5: packet_data = {1'b0,1'b0,1'b0,parallel_out[7:3]};
+	4'd7: packet_data = {1'b0,parallel_out[7:1]};
+	4'd8: packet_data = parallel_out;
+    endcase
+  end
 
 endmodule

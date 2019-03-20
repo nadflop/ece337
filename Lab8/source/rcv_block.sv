@@ -10,6 +10,8 @@ module rcv_block
 (
   input wire clk,
   input wire n_rst,
+  input logic [3:0] data_size,
+  input logic [13:0] bit_period,
   input wire serial_in,
   input wire data_read,
   output wire [7:0] rx_data,
@@ -19,6 +21,7 @@ module rcv_block
 );
   wire start_bit, timeEN, shiftEN, sbcEN, loadEN, clear, pckt_done, stop_bit;
   wire [7:0] rcv_data;
+
   //wait for start bit
   start_bit_det START
     (
@@ -32,7 +35,9 @@ module rcv_block
     (
 	.clk(clk), 
 	.n_rst(n_rst), 
-	.enable_timer(timeEN), 
+	.enable_timer(timeEN),
+	.data_size(data_size),
+	.bit_period(bit_period), 
 	.shift_enable(shiftEN), 
 	.packet_done(pckt_done)
     );
@@ -56,6 +61,7 @@ module rcv_block
 	.n_rst(n_rst), 
 	.shift_strobe(shiftEN), 
 	.serial_in(serial_in), 
+	.data_size(data_size),
 	.packet_data(rcv_data), 
 	.stop_bit(stop_bit)
     );

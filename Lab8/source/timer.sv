@@ -8,22 +8,27 @@
 
 module timer
 (
-  input clk,
-  input n_rst,
-  input enable_timer,
-  output shift_enable,
-  output packet_done 
+  input wire clk,
+  input wire n_rst,
+  input wire enable_timer,
+  input wire [3:0] data_size,
+  input wire [13:0] bit_period,
+  output reg shift_enable,
+  output reg packet_done 
 );
-  reg [3:0] clock_count;
+  reg [13:0] clock_count;
   reg [3:0] bit_count;
 
-  flex_counter 
-  SHIFT(
+  flex_counter #(
+    .NUM_CNT_BITS(14)
+  )
+  SHIFT
+  (
     .clk(clk),
     .n_rst(n_rst),
     .clear(packet_done),
     .count_enable(enable_timer),
-    .rollover_val(4'd10),
+    .rollover_val(bit_period),
     .count_out(clock_count),
     .rollover_flag(shift_enable)
   );
@@ -35,8 +40,9 @@ module timer
     .n_rst(n_rst),
     .clear(packet_done),
     .count_enable(shift_enable),
-    .rollover_val(4'd9),
+    .rollover_val(data_size+1'b1),
     .count_out(bit_count),
     .rollover_flag(packet_done)
   );
+
 endmodule

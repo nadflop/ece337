@@ -342,7 +342,26 @@ initial begin
   enqueue_transaction(1'b1, 1'b0, ADDR_BIT_CR1, {2'b00, tb_test_bit_period[13:8]}, 1'b0);
 
   execute_transactions(2);
+     //*****************************************************************************
+  // Test Case: Read data buffer (0x6)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Read from rx_data";
+  tb_test_case_num = tb_test_case_num + 1;
 
+  // Reset the DUT to isolate from prior to isolate from prior test case
+  reset_dut();
+  
+  // Enque the needed transactions (Overall period of 1000 clocks)
+  tb_test_bit_period = 14'd1000;
+
+  // Enqueue the CR Reads
+  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, tb_test_bit_period[7:0], 1'b0);
+
+  // Run the read transactions via the model
+  execute_transactions(1);
+
+   
   //*****************************************************************************
   // Test Case: Configure the Bit Period Settings
   //*****************************************************************************
