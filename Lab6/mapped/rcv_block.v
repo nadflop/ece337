@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////
 // Created by: Synopsys DC Expert(TM) in wire load mode
 // Version   : K-2015.06-SP1
-// Date      : Wed Feb 20 04:52:55 2019
+// Date      : Tue Sep 24 13:44:53 2019
 /////////////////////////////////////////////////////////////
 
 
@@ -176,30 +176,30 @@ module rcu ( clk, n_rst, start_bit_detected, packet_done, framing_error,
         sbc_clear, sbc_enable, load_buffer, enable_timer );
   input clk, n_rst, start_bit_detected, packet_done, framing_error;
   output sbc_clear, sbc_enable, load_buffer, enable_timer;
-  wire   n28, n29, n30, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15,
+  wire   n24, n25, n26, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15,
          n16, n17, n18, n19, n20, n21;
-  wire   [3:0] state;
+  wire   [2:0] state;
 
-  DFFSR \state_reg[0]  ( .D(n30), .CLK(clk), .R(n_rst), .S(1'b1), .Q(state[0])
+  DFFSR \state_reg[0]  ( .D(n26), .CLK(clk), .R(n_rst), .S(1'b1), .Q(state[0])
          );
-  DFFSR \state_reg[1]  ( .D(n28), .CLK(clk), .R(n_rst), .S(1'b1), .Q(state[1])
+  DFFSR \state_reg[1]  ( .D(n24), .CLK(clk), .R(n_rst), .S(1'b1), .Q(state[1])
          );
-  DFFSR \state_reg[2]  ( .D(n29), .CLK(clk), .R(n_rst), .S(1'b1), .Q(state[2])
+  DFFSR \state_reg[2]  ( .D(n25), .CLK(clk), .R(n_rst), .S(1'b1), .Q(state[2])
          );
-  NOR2X1 U3 ( .A(n4), .B(n5), .Y(sbc_enable) );
-  NAND2X1 U4 ( .A(state[0]), .B(n6), .Y(n5) );
+  NOR2X1 U6 ( .A(n4), .B(n5), .Y(sbc_enable) );
+  NAND2X1 U7 ( .A(state[0]), .B(n6), .Y(n5) );
   INVX1 U8 ( .A(n7), .Y(sbc_clear) );
-  OAI21X1 U9 ( .A(n7), .B(n8), .C(n9), .Y(n30) );
+  OAI21X1 U9 ( .A(n7), .B(n8), .C(n9), .Y(n26) );
   MUX2X1 U10 ( .B(n10), .A(n11), .S(state[0]), .Y(n9) );
   NOR2X1 U11 ( .A(n11), .B(n12), .Y(n10) );
   AOI21X1 U12 ( .A(packet_done), .B(state[1]), .C(n13), .Y(n12) );
   MUX2X1 U13 ( .B(n14), .A(framing_error), .S(state[2]), .Y(n13) );
   NAND2X1 U14 ( .A(start_bit_detected), .B(n4), .Y(n14) );
   INVX1 U15 ( .A(framing_error), .Y(n8) );
-  OAI21X1 U16 ( .A(n15), .B(n4), .C(n16), .Y(n29) );
+  OAI21X1 U16 ( .A(n15), .B(n4), .C(n16), .Y(n25) );
   NAND2X1 U17 ( .A(state[2]), .B(n17), .Y(n16) );
   OAI21X1 U18 ( .A(state[0]), .B(framing_error), .C(n18), .Y(n17) );
-  OAI21X1 U19 ( .A(framing_error), .B(n7), .C(n19), .Y(n28) );
+  OAI21X1 U19 ( .A(framing_error), .B(n7), .C(n19), .Y(n24) );
   OAI21X1 U20 ( .A(n11), .B(n15), .C(state[1]), .Y(n19) );
   INVX1 U21 ( .A(n18), .Y(n11) );
   NAND2X1 U22 ( .A(state[2]), .B(state[1]), .Y(n18) );

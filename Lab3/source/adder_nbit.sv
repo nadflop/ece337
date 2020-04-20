@@ -55,13 +55,15 @@ module adder_nbit
 	assign overflow = carrys[BIT_WIDTH];
 	
 	//output value checking
+        integer j;
+   
 	always_comb
 	begin
-	for(i = 0; i < BIT_WIDTH; i = i + 1)
+	for(j = 0; j < BIT_WIDTH; j = j + 1)
 		begin
-			#(2) //force assert to be delayed 2 timescale units after the input change
-			assert (((a[i] + b[i] + carry_in) % 2) == sum[i])
-			else $error("Output 's[%d]' of component is not correct", i); 
+			//#(2) //force assert to be delayed 2 timescale units after the input change
+			assert (((a[j] + b[j] + carry_in) % 2) == sum[j])
+			else $error("Output 's[%d]' of component is not correct", j); 
 		end
 	end
 

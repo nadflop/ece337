@@ -1,0 +1,226 @@
+// $Id: $
+// File name:   databuffer.sv
+// Created:     4/15/2019
+// Author:      Ray Yan
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: 4.1.1
+module data_buffer
+(
+	input clk,
+	input n_rst,
+
+	input wire store_rx_packet,
+	input wire store_tx_data,
+	input wire get_rx_data,
+	input wire get_tx_packet,
+
+	input [7:0] rx_packet_data,
+	input wire [7:0] tx_data,
+	
+
+	input wire flush,
+	input wire clear,
+	output reg [7:0] tx_packet_data,
+	output reg [7:0] rx_data,
+	output reg [6:0] buffer_occupancy
+);
+
+reg [6:0] next_buff;
+reg [7:0][31:0] rxreg;
+reg [7:0][31:0] txreg;
+reg [7:0][31:0] nrxreg;
+reg [7:0][31:0] ntxreg;
+integer i;
+reg track;
+
+always_ff @ (posedge clk, negedge n_rst) begin
+	if (!n_rst) begin
+		rxreg[0] <= '0;
+		txreg[0] <= '0;
+		rxreg[1] <= '0;
+		txreg[1] <= '0;
+		rxreg[2] <= '0;
+		txreg[2] <= '0;
+		rxreg[3] <= '0;
+		txreg[3] <= '0;
+		rxreg[4] <= '0;
+		txreg[4] <= '0;
+		rxreg[5] <= '0;
+		txreg[5] <= '0;
+		rxreg[6] <= '0;
+		txreg[6] <= '0;
+		rxreg[7] <= '0;
+		txreg[7] <= '0;
+		rxreg[8] <= '0;
+		txreg[8] <= '0;
+		rxreg[9] <= '0;
+		txreg[9] <= '0;
+		rxreg[10] <= '0;
+		txreg[10] <= '0;
+		rxreg[11] <= '0;
+		txreg[11] <= '0;
+		rxreg[12] <= '0;
+		txreg[12] <= '0;
+		rxreg[13] <= '0;
+		txreg[13] <= '0;
+		rxreg[14] <= '0;
+		txreg[14] <= '0;
+		rxreg[15] <= '0;
+		txreg[15] <= '0;
+		rxreg[16] <= '0;
+		txreg[16] <= '0;
+		rxreg[17] <= '0;
+		txreg[17] <= '0;
+		rxreg[18] <= '0;
+		txreg[18] <= '0;
+		rxreg[19] <= '0;
+		txreg[19] <= '0;
+		rxreg[20] <= '0;
+		txreg[20] <= '0;
+		rxreg[21] <= '0;
+		txreg[21] <= '0;
+		rxreg[22] <= '0;
+		txreg[22] <= '0;
+		rxreg[23] <= '0;
+		txreg[23] <= '0;
+		rxreg[24] <= '0;
+		txreg[24] <= '0;
+		rxreg[25] <= '0;
+		txreg[25] <= '0;
+		rxreg[26] <= '0;
+		txreg[26] <= '0;
+		rxreg[27] <= '0;
+		txreg[27] <= '0;
+		rxreg[28] <= '0;
+		txreg[28] <= '0;
+		rxreg[29] <= '0;
+		txreg[29] <= '0;
+		rxreg[30] <= '0;
+		txreg[30] <= '0;
+		rxreg[31] <= '0;
+		txreg[31] <= '0;
+		rxreg[32] <= '0;
+		txreg[32] <= '0;
+		buffer_occupancy <= '0;
+	end
+        else if (flush || clear) begin
+		rxreg[0] <= '0;
+		txreg[0] <= '0;
+		rxreg[1] <= '0;
+		txreg[1] <= '0;
+		rxreg[2] <= '0;
+		txreg[2] <= '0;
+		rxreg[3] <= '0;
+		txreg[3] <= '0;
+		rxreg[4] <= '0;
+		txreg[4] <= '0;
+		rxreg[5] <= '0;
+		txreg[5] <= '0;
+		rxreg[6] <= '0;
+		txreg[6] <= '0;
+		rxreg[7] <= '0;
+		txreg[7] <= '0;
+		rxreg[8] <= '0;
+		txreg[8] <= '0;
+		rxreg[9] <= '0;
+		txreg[9] <= '0;
+		rxreg[10] <= '0;
+		txreg[10] <= '0;
+		rxreg[11] <= '0;
+		txreg[11] <= '0;
+		rxreg[12] <= '0;
+		txreg[12] <= '0;
+		rxreg[13] <= '0;
+		txreg[13] <= '0;
+		rxreg[14] <= '0;
+		txreg[14] <= '0;
+		rxreg[15] <= '0;
+		txreg[15] <= '0;
+		rxreg[16] <= '0;
+		txreg[16] <= '0;
+		rxreg[17] <= '0;
+		txreg[17] <= '0;
+		rxreg[18] <= '0;
+		txreg[18] <= '0;
+		rxreg[19] <= '0;
+		txreg[19] <= '0;
+		rxreg[20] <= '0;
+		txreg[20] <= '0;
+		rxreg[21] <= '0;
+		txreg[21] <= '0;
+		rxreg[22] <= '0;
+		txreg[22] <= '0;
+		rxreg[23] <= '0;
+		txreg[23] <= '0;
+		rxreg[24] <= '0;
+		txreg[24] <= '0;
+		rxreg[25] <= '0;
+		txreg[25] <= '0;
+		rxreg[26] <= '0;
+		txreg[26] <= '0;
+		rxreg[27] <= '0;
+		txreg[27] <= '0;
+		rxreg[28] <= '0;
+		txreg[28] <= '0;
+		rxreg[29] <= '0;
+		txreg[29] <= '0;
+		rxreg[30] <= '0;
+		txreg[30] <= '0;
+		rxreg[31] <= '0;
+		txreg[31] <= '0;
+		rxreg[32] <= '0;
+		txreg[32] <= '0;
+		buffer_occupancy <= '0;
+	   end
+	else begin
+		rxreg <= nrxreg;
+		txreg <= ntxreg;
+		buffer_occupancy <= next_buff;
+	end
+end
+
+always_comb begin
+	tx_packet_data = '0;
+	rx_data = '0;
+	track = 0;
+	nrxreg = rxreg;
+	ntxreg = txreg;
+	next_buff = buffer_occupancy;
+	if (store_rx_packet) begin
+		for (i = 31; i >= 0; i = i - 1) begin
+			if (rxreg[i] == 8'b00000000 && track == 0) begin
+				nrxreg[i] = rx_packet_data;
+				track = 1;
+			end
+		end
+		next_buff = buffer_occupancy + 1;
+	end
+	else if (store_tx_data) begin
+		for (i = 31; i >= 0; i = i - 1) begin
+			if (txreg[i] == 8'b00000000 && track == 0) begin
+				ntxreg[i] = tx_data;
+				track = 1;
+			end
+		end 
+		next_buff = buffer_occupancy + 1;
+	end
+	else if (get_rx_data) begin
+		rx_data = rxreg[31];
+		for (i = 31; i > 0; i = i - 1) begin
+			nrxreg[i] = rxreg[i-1];
+		end
+		nrxreg[0] = '0;
+		next_buff = buffer_occupancy - 1;
+	end
+	else if (get_tx_packet) begin
+		tx_packet_data = txreg[31];
+		for (i = 31; i > 0; i = i - 1) begin
+			ntxreg[i] = txreg[i-1];
+		end
+		ntxreg[0] = '0;
+		next_buff = buffer_occupancy - 1;
+	end
+end
+
+endmodule

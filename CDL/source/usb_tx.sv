@@ -1,0 +1,144 @@
+// $Id: $
+// File name:   usb_tx.sv
+// Created:     2/26/2019
+// Author:      Nur Nadhira Aqilah Binti Mohd Shah
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: top level module for usb tx
+
+module usb_tx
+(
+    input wire clk,
+    input wire n_rst,
+    //coming from/going to the Data Buffer
+    input wire [6:0] buffer_occupancy,
+    input wire [7:0] tx_packet_data,
+    output wire get_tx_packet_data,
+    //coming from/going to the AHB Slave
+    input wire [1:0] tx_packet,
+    input wire tx_enable,
+    output wire tx_error,
+    output wire tx_transfer_active,
+    //going to the host
+    output wire dplus_out,
+    output wire dminus_out
+);
+  wire packet_done, enable_timer, load_sync, load_pid_data, load_ack,
+       load_nack, load_stall, load_eop, load_crc1, load_crc2, shift_enable,
+       pause, serial_out, init_crc, clear_64;
+  wire crc_out, complete;
+  wire [3:0] roll_val;
+  //wire val;
+  //wire [15:0] crc_data;
+
+  tx_controller CONTROLLER
+  (
+    .clk(clk),
+    .n_rst(n_rst),
+    .tx_packet(tx_packet),
+    .buffer_occupancy(buffer_occupancy),
+    .tx_enable(tx_enable),
+    .tx_error(tx_error),
+    .tx_transfer_active(tx_transfer_active),
+    .get_tx_packet_data(get_tx_packet_data),
+    .packet_done(packet_done),
+    .enable_timer(enable_timer),
+    .clear_8(clear_8),
+    .clear_64(clear_64),
+    .load_sync(load_sync),
+    .load_pid_data(load_pid_data),
+    .load_data(load_data),
+    .load_ack(load_ack),
+    .load_nack(load_nack),
+    .load_stall(load_stall),
+    .load_eop(load_eop),
+    .load_crc1(load_crc1),
+    .load_crc2(load_crc2),
+    .init_crc(init_crc),
+    .roll_val(roll_val),
+    .complete(complete),
+    .pause(pause)
+    //.val(val)
+  );
+
+  tx_timer TIMER
+  (
+    .clk(clk),
+    .n_rst(n_rst),
+    .enable_timer(enable_timer),
+    .clear_8(clear_8),
+    .clear_64(clear_64),
+    .roll_val(roll_val),
+    .shift_enable(shift_enable),
+    .packet_done(packet_done),
+    .pause(pause) 
+  );
+
+  tx_bit_stuffer BIT_STUFF
+  (
+    .clk(clk),
+    .n_rst(n_rst),
+    .shift_enable(shift_enable),
+    .serial_out(serial_out),
+    .pause(pause)
+    //.val(val)
+  );
+
+  tx_flex_pts_sr
+  #(
+     .NUM_BITS(8),
+     .SHIFT_MSB(0)
+)
+  SHIFT_REG
+  (
+    .clk(clk),
+    .n_rst(n_rst),
+    .shift_enable(shift_enable),
+    .load_sync(load_sync),
+    .load_pid_data(load_pid_data),
+    .load_data(load_data),
+    .load_ack(load_ack),
+    .load_nack(load_nack),
+    .load_stall(load_stall),
+    .load_eop(load_eop),
+    .load_crc1(load_crc1),
+    .load_crc2(load_crc2),
+    .tx_packet_data(tx_packet_data),
+    //.crc_out(crc_out),
+    //.crc_data(crc_data),
+    .serial_out(serial_out),
+    .pause(pause)
+  );
+
+  tx_encoder
+  
+  encode(
+    .clk(clk),
+    .n_rst(n_rst),
+    .shift_enable(shift_enable),
+    .serial_out(serial_out),
+    .crc_out(crc_out),
+    .load_eop(load_eop),
+    .load_crc1(load_crc1),
+    .load_crc2(load_crc2),
+    .pause(pause),
+    .complete(complete),
+    .dplus_out(dplus_out),
+    .dminus_out(dminus_out)
+  );
+  
+  //TODO: ADD CALLING TO THE 16 BIT CRC GENERATOR
+  crc_16
+
+  crc(
+   .clk(clk),
+   .n_rst(n_rst),
+   .bit_out(serial_out),
+   .init_crc(init_crc),
+   .shift_enable(shift_enable),
+   .CRC(crc_out)
+  );
+
+endmodule
+
+

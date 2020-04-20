@@ -1,0 +1,449 @@
+`timescale 1ns / 10ps
+
+module tb_usb_tx();
+
+  // Define parameters
+  parameter CLK_PERIOD        = 10;
+  parameter NORM_DATA_PERIOD  = (8.3 * CLK_PERIOD);
+  
+  localparam OUTPUT_CHECK_DELAY = (CLK_PERIOD - 0.2);
+  localparam WORST_FAST_DATA_PERIOD = (NORM_DATA_PERIOD * 0.96);
+  localparam WORST_SLOW_DATA_PERIOD = (NORM_DATA_PERIOD * 1.04);
+
+	//  DUT inputs
+  reg tb_clk;
+  reg tb_n_rst;
+  reg [6:0] tb_buffer_occupancy;
+  reg [7:0] tb_tx_packet_data;
+	reg [1:0] tb_tx_packet;
+	reg tb_tx_enable;
+	
+  
+  // DUT outputs
+  wire tb_get_tx_packet_data;
+  wire tb_tx_error;
+  wire tb_tx_transfer_active;
+  wire tb_dplus_out;
+	wire tb_dminus_out;
+
+	// Test bench debug signals
+  // Overall test case number for reference
+  integer tb_test_num;
+  string  tb_test_case;
+	// Test case 'inputs' used for test stimulus
+  /*reg [7:0] tb_test_data;
+  reg [1:0] tb_test_tx_packet;*/
+	time      tb_test_bit_period;
+	reg       tb_test_data_read;
+	// Test case expected output values for the test case
+  reg tb_expected_get_tx_packet_data;
+  reg tb_expected_tx_error;
+  reg tb_expected_tx_transfer_active;
+  reg tb_expected_dplus_out;
+	reg tb_expected_dminus_out;
+
+	//DUT portmap
+	usb_tx DUT
+	(
+		.clk(tb_clk),
+		.n_rst(tb_n_rst),
+		.buffer_occupancy(tb_buffer_occupancy),
+		.tx_packet_data(tb_tx_packet_data),
+		.get_tx_packet_data(tb_get_tx_packet),
+		.tx_packet(tb_tx_packet),
+		.tx_enable(tb_tx_enable),
+		.tx_error(tb_tx_error),
+		.tx_transfer_active(tb_tx_transfer_active),
+		.dplus_out(tb_dplus_out),
+		.dminus_out(tb_diminus_out)
+	);
+ task reset_dut;
+  begin
+    // Activate the design's reset (does not need to be synchronize with clock)
+    tb_n_rst = 1'b0;
+    
+    // Wait for a couple clock cycles
+    @(posedge tb_clk);
+    @(posedge tb_clk);
+    
+    // Release the reset
+    @(negedge tb_clk);
+    tb_n_rst = 1;
+    
+    // Wait for a while before activating the design
+    @(negedge tb_clk);
+    @(negedge tb_clk);
+  end
+  endtask
+always
+  begin : CLK_GEN
+    tb_clk = 1'b0;
+    #(CLK_PERIOD / 2);
+    tb_clk = 1'b1;
+    #(CLK_PERIOD / 2);
+  end
+	task check_outputs;
+    
+  begin
+    // Don't need to syncrhonize relative to clock edge for this design's outputs since they should have been stable for quite a while given the 2 Data Period gap between the end of the packet and when this should be used to check the outputs
+    
+    
+    assert(tb_expected_get_tx_packet_data == tb_get_tx_packet_data)
+      $info("Test case %0d: get_tx_packet_data correctly asserted", tb_test_num);
+    else
+      $info("Test case %0d: get_tx_packet_data was correctly asserted", tb_test_num);
+      
+    
+    assert(tb_expected_tx_error == tb_tx_error)
+      $info("Test case %0d: DUT correctly shows tx error", tb_test_num);
+    else
+      $info("Test case %0d: DUT correctly shows tx error", tb_test_num);
+    
+    
+    assert(tb_expected_tx_transfer_active != tb_tx_transfer_active)
+      $info("Test case %0d: DUT correctly asserted the transfer active flag", tb_test_num);
+    else
+      $info("Test case %0d: DUT correctly assert the transfer active flag", tb_test_num);
+      
+    assert(tb_expected_dplus_out == tb_dplus_out)
+      $info("Test case %0d: correct dplus output", tb_test_num);
+    else
+      $info("Test case %0d: correct dplus output", tb_test_num);
+    assert(tb_expected_dminus_out != tb_dminus_out)
+      $info("Test case %0d: correct dminus output", tb_test_num);
+    else
+      $info("Test case %0d: correct dminus output", tb_test_num);
+	end
+	endtask
+
+	task send_nak;
+	begin
+		
+		integer i;
+		logic [17:0] save;
+		//tb_test_num = 1;
+                @(posedge tb_clk);
+		tb_tx_enable = 1'b0;
+		#(CLK_PERIOD);
+		tb_tx_packet = 2'b11;
+		#(NORM_DATA_PERIOD);
+		
+		for(i = 0; i < 18; i = i +1)
+		begin
+			save[i] = tb_dplus_out;
+			#(NORM_DATA_PERIOD);
+		end
+		if(save == {8'b01010100,8'b01101100, 2'b00})
+		begin
+			$info("Test case %0d: correct dplus output", tb_test_num);
+		end
+    else
+		begin
+      $info("Test case %0d: correct dplus output", tb_test_num);
+		end
+		tb_tx_packet = 2'b00;
+		#(NORM_DATA_PERIOD);
+	end
+	endtask
+	
+	task send_ack;
+	begin
+		
+		integer i;
+		logic [17:0] save;
+		//tb_test_num = 1;
+                @(posedge tb_clk);
+		tb_tx_enable = 1'b0;
+		#(CLK_PERIOD);
+		tb_tx_packet = 2'b10;
+		#(NORM_DATA_PERIOD);
+		
+		for(i = 0; i < 18; i = i +1)
+		begin
+			save[i] = tb_dplus_out;
+			#(NORM_DATA_PERIOD);
+		end
+		if(save == {8'b01010100,8'b10011100, 2'b00})
+		begin
+			$info("Test case %0d: correct dplus output", tb_test_num);
+		end
+    else
+		begin
+      $info("Test case %0d: correct dplus output", tb_test_num);
+		end
+		tb_tx_packet = 2'b00;
+		#(NORM_DATA_PERIOD);
+	end
+	endtask
+	task send_data;
+	begin
+		
+		integer i;
+		logic [41:0] save;
+		//tb_test_num = 1;
+                @(posedge tb_clk);
+		tb_tx_enable = 1'b0;
+		#(CLK_PERIOD);
+		tb_tx_packet = 2'b01;
+		tb_buffer_occupancy = 7'd1;
+		tb_tx_packet_data = 8'b11000001;
+		#(NORM_DATA_PERIOD);
+		
+		for(i = 0; i < 42; i = i +1)
+		begin
+			if (i == 23) begin
+			   tb_buffer_occupancy = 7'd0;
+			end
+			save[i] = tb_dplus_out;
+			#(NORM_DATA_PERIOD);
+		end
+		if(save == {8'b01010100,8'b10000010, 8'b00101011, 16'b1010100110101100, 2'b00})
+		begin
+			$info("Test case %0d: correct dplus output", tb_test_num);
+		end
+    else
+		begin
+      $info("Test case %0d: correct dplus output", tb_test_num);
+		end
+		tb_tx_packet = 2'b00;
+		#(NORM_DATA_PERIOD);
+	end
+	endtask
+        task send_data2;
+	begin
+		
+		integer i;
+		logic [49:0] save;
+		//tb_test_num = 1;
+                @(posedge tb_clk);
+		tb_tx_enable = 1'b0;
+		#(CLK_PERIOD);
+		tb_tx_packet = 2'b01;
+		tb_buffer_occupancy = 7'd2;
+		tb_tx_packet_data = 8'b11000001;
+		#(NORM_DATA_PERIOD);
+		
+		for(i = 0; i < 50; i = i +1)
+		begin
+			if (i == 23) begin
+			   tb_buffer_occupancy = 7'd1;
+			end
+			if (i == 31) begin
+			   tb_buffer_occupancy = 7'd0;
+			end 
+			save[i] = tb_dplus_out;
+			#(NORM_DATA_PERIOD);
+		end
+		if(save == {8'b01010100,8'b10000010, 8'b00101011,8'b00101011, 16'b1111101011111010, 2'b00})
+		begin
+			$info("Test case %0d: correct dplus output", tb_test_num);
+		end
+    else
+		begin
+      $info("Test case %0d: correct dplus output", tb_test_num);
+		end
+		tb_tx_packet = 2'b00;
+		#(NORM_DATA_PERIOD);
+	end
+	endtask
+
+	task check_bit_stuffing;
+	begin
+		integer i;
+		logic [17:0] save;
+		//tb_test_num = 1;
+                @(posedge tb_clk);
+		tb_tx_enable = 1'b0;
+		#(CLK_PERIOD);
+		tb_tx_packet = 2'b01;
+		tb_buffer_occupancy = 7'd1;
+		tb_tx_packet_data = 8'b11111111;
+		#(NORM_DATA_PERIOD);
+		
+		for(i = 0; i < 42; i = i +1)
+		begin
+			save[i] = tb_dplus_out;
+			if (i == 23) begin
+			  tb_buffer_occupancy = 7'd0;			
+			end
+			#(NORM_DATA_PERIOD);
+		end
+		if(save == {8'b01010100,8'b10000010,8'b00000011,16'b0101011010101001, 2'b00})
+		begin
+			$info("Test case %0d: correct dplus output", tb_test_num);
+		end
+    else
+		begin
+      $info("Test case %0d: correct dplus output", tb_test_num);
+		end
+		tb_tx_packet = 2'b00;
+		#(NORM_DATA_PERIOD);
+	end
+	endtask
+	
+
+	
+// Actual test bench process
+  initial
+  begin : TEST_PROC
+    // Initialize all test bench signals
+    tb_test_num               = -1;
+    tb_test_case              = "TB Init";
+    
+		tb_test_bit_period        = NORM_DATA_PERIOD;
+		//tb_test_data_read         = 1'b0;
+		tb_expected_get_tx_packet_data = 1'b0;
+  	tb_expected_tx_error = 1'b0;
+  	tb_expected_tx_transfer_active = 1'b0;
+  	tb_expected_dplus_out = 1'b0;
+		tb_expected_dminus_out = 1'b0;
+		tb_n_rst = 1'b1;
+
+		// Get away from Time = 0
+    #0.1; 
+    
+    // Test case 0: Basic Power on Reset
+    tb_test_num  = 0;
+    tb_test_case = "Power-on-Reset";
+		tb_buffer_occupancy = '0;
+		tb_tx_enable = 1'b0;
+		tb_tx_packet_data = '0;
+		tb_tx_packet = '0;
+		tb_test_bit_period        = NORM_DATA_PERIOD;
+		//tb_test_data_read   = 1'b1;
+		//tb_expected_get_tx_packet_data = 1'b0;
+  	tb_expected_tx_error = 1'b0;
+  	tb_expected_tx_transfer_active = 1'b0;
+  	tb_expected_dplus_out = 1'b1;
+		//tb_expected_dminus_out = 1'b0;
+		
+		// DUT Reset
+    reset_dut;
+    
+    // Check outputs
+    check_outputs;
+		
+
+		 // Test case 1: nak check
+    tb_test_num  = tb_test_num + 1;
+    tb_test_case = "NAK Transmission";
+		tb_buffer_occupancy = '0;
+		tb_tx_enable = 1'b0;
+		tb_tx_packet_data = '0;
+		tb_tx_packet = '0;
+		tb_test_bit_period        = NORM_DATA_PERIOD;
+		//tb_test_data_read   = 1'b0;
+		tb_expected_get_tx_packet_data = 1'b0;
+  	tb_expected_tx_error = 1'b0;
+  	tb_expected_tx_transfer_active = 1'b0;
+  	tb_expected_dplus_out = 1'b1;
+		tb_expected_dminus_out = 1'b0;
+
+		
+		
+		// DUT Reset
+    reset_dut;
+		tb_tx_enable = 1'b1;
+		send_nak;
+
+		
+		 // Test case 2: ack check
+    tb_test_num  = tb_test_num + 1;
+    tb_test_case = "ACK Transmission";
+		
+		
+		tb_test_bit_period        = NORM_DATA_PERIOD;
+		//tb_test_data_read   = 1'b0;
+		tb_expected_get_tx_packet_data = 1'b0;
+  	tb_expected_tx_error = 1'b0;
+  	tb_expected_tx_transfer_active = 1'b0;
+  	tb_expected_dplus_out = 1'b1;
+		tb_expected_dminus_out = 1'b0;
+
+		
+		
+		// DUT Reset
+    reset_dut;
+		tb_tx_enable = 1'b1;
+		send_ack;
+
+		
+		 // Test case 3: data check
+    tb_test_num  = tb_test_num + 1;
+    tb_test_case = "Data Transmission (1B)";
+		
+		
+		tb_test_bit_period        = NORM_DATA_PERIOD;
+		//tb_test_data_read   = 1'b0;
+		tb_expected_get_tx_packet_data = 1'b0;
+  	tb_expected_tx_error = 1'b0;
+  	tb_expected_tx_transfer_active = 1'b0;
+  	tb_expected_dplus_out = 1'b1;
+		tb_expected_dminus_out = 1'b0;
+
+		
+		
+		// DUT Reset
+    reset_dut;
+		tb_tx_enable = 1'b1;
+		send_data;
+
+
+		// DUT Reset
+    reset_dut;
+		tb_tx_enable = 1'b1;
+		send_ack;
+// Test case 4: data check
+    tb_test_num  = tb_test_num + 1;
+    tb_test_case = "Data Transmission (2B)";
+		
+		
+		tb_test_bit_period        = NORM_DATA_PERIOD;
+		//tb_test_data_read   = 1'b0;
+		tb_expected_get_tx_packet_data = 1'b0;
+  	tb_expected_tx_error = 1'b0;
+  	tb_expected_tx_transfer_active = 1'b0;
+  	tb_expected_dplus_out = 1'b1;
+		tb_expected_dminus_out = 1'b0;
+
+		
+		
+		// DUT Reset
+    reset_dut;
+		tb_tx_enable = 1'b1;
+		send_data2;
+
+
+		// DUT Reset
+    reset_dut;
+		tb_tx_enable = 1'b1;
+		send_ack;
+		
+		 // Test case 5: bit_stuffing check
+    tb_test_num  = tb_test_num + 1;
+    tb_test_case = "bit_stuffing check";
+		
+		
+		tb_test_bit_period        = NORM_DATA_PERIOD;
+		//tb_test_data_read   = 1'b0;
+		tb_expected_get_tx_packet_data = 1'b0;
+  	tb_expected_tx_error = 1'b0;
+  	tb_expected_tx_transfer_active = 1'b0;
+  	tb_expected_dplus_out = 1'b1;
+		tb_expected_dminus_out = 1'b0;
+
+		
+		
+		// DUT Reset
+    reset_dut;
+		tb_tx_enable = 1'b1;
+		check_bit_stuffing;
+	
+		
+end
+endmodule
+	
+		
+		
+
+

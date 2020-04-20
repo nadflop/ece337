@@ -1,0 +1,600 @@
+// $Id: $
+// File name:   tb_data_buffer.sv
+// Created:     17/4/2019
+// Author:      Nur Nadhira Aqilah
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: Starter test-bench for the data_buffer
+
+`timescale 1ns / 10ps
+
+module tb_data_buffer();
+
+  // Define parameters
+  localparam CLK_PERIOD = 10;
+  
+  //DUT inputs and outputs
+  reg tb_clk;
+  reg tb_n_rst;
+  //DUT output
+  reg [6:0] tb_buffer_occupancy;
+  //input from ahb slave
+  reg tb_get_rx_data;
+  reg tb_store_tx_data;
+  reg [7:0] tb_tx_packet_data;
+  reg tb_clear;
+  //output to ahb slave
+  reg [7:0] tb_rx_data;
+  //input from usb rx
+  reg tb_flush;
+  reg tb_store_rx_packet;
+  reg [7:0] tb_rx_packet_data;
+  //input from usb tx
+  reg tb_get_tx_packet;
+  //output to usb tx
+  reg [7:0] tb_tx_data;  
+
+  //Test bench debug signals
+  //Overall test case number for reference
+  integer tb_test_case_num;
+  string  tb_test_case;
+  integer i;
+   
+  //Test case expected output values for test case
+  reg [6:0] tb_expected_buffer_occupancy;  
+  reg [7:0] tb_expected_tx_packet_data;
+  reg [7:0] tb_expected_rx_data;
+
+  task reset_dut;
+  begin
+    // Activate the design's reset (does not need to be synchronize with clock)
+    tb_n_rst = 1'b0;
+    
+    // Wait for a couple clock cycles
+    @(posedge tb_clk);
+    @(posedge tb_clk);
+    
+    // Release the reset
+    @(negedge tb_clk);
+    tb_n_rst = 1;
+    
+    // Wait for a while before activating the design
+    @(posedge tb_clk);
+    @(negedge tb_clk);
+  end
+  endtask
+
+  task check_outputs;
+  begin
+    // Don't need to syncrhonize relative to clock edge for this design's outputs since they should have been stable for quite a while given the 2 Data Period gap between the end of the packet and when this should be used to check the outputs
+    
+    // Buffer occupancy should update accordingly to the data it recieved
+    assert(tb_expected_buffer_occupancy == tb_buffer_occupancy)
+      $info("Test case %0d: Buffer occupancy correctly updated", tb_test_case_num);
+    else
+      $error("Test case %0d: Buffer occupancy data was not correctly updated", tb_test_case_num);
+
+    // Data recieved should match the data sent
+    assert(tb_expected_rx_data == tb_rx_data)
+      $info("Test case %0d: Test data correctly received", tb_test_case_num);
+    else
+      $error("Test case %0d: Test data was not correctly received", tb_test_case_num);    
+
+    // Data sent should match the data recieved
+    assert(tb_expected_tx_packet_data == tb_tx_packet_data)
+      $info("Test case %0d: Test data correctly received", tb_test_case_num);
+    else
+      $error("Test case %0d: Test data was not correctly received", tb_test_case_num);
+
+  end
+  endtask
+  
+  always
+  begin : CLK_GEN
+    tb_clk = 1'b0;
+    #(CLK_PERIOD / 2);
+    tb_clk = 1'b1;
+    #(CLK_PERIOD / 2);
+  end
+
+  //DUT portmap
+  data_buffer DUT
+  (
+    .clk(tb_clk),
+    .n_rst(tb_n_rst),
+    .store_rx_packet(tb_store_rx_packet),
+    .store_tx_data(tb_store_tx_data),
+    .get_rx_data(tb_get_rx_data),
+    .get_tx_packet(tb_get_tx_packet),
+    .rx_packet_data(tb_rx_packet_data),
+    .tx_data(tb_tx_data),
+    .flush(tb_flush),
+    .clear(tb_clear),
+    .tx_packet_data(tb_tx_packet_data),
+    .rx_data(tb_rx_data),
+    .buffer_occupancy(tb_buffer_occupancy)
+   );
+   
+
+//*****************************************************************************
+//*****************************************************************************
+// Main TB Process
+//*****************************************************************************
+//*****************************************************************************
+initial begin
+    // Initialize all test bench signals
+    tb_test_case_num               = -1;
+    tb_test_case              = "TB Init";
+    tb_expected_buffer_occupancy = '0;
+    tb_expected_rx_data = '0;
+    tb_expected_tx_packet_data = '0;
+    // Initilize all inputs to inactive/idle values
+    tb_n_rst      = 1'b1; // Initially inactive
+    
+    // Get away from Time = 0
+    #0.1; 
+
+  //*****************************************************************************
+  // Power-on-Reset Test Case
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Power-on-Reset";
+  tb_test_case_num = tb_test_case_num + 1;
+  
+  //RESET the DUT
+  reset_dut();
+
+  //Check outputs for reset state
+  tb_expected_buffer_occupancy = '0;
+  tb_expected_rx_data = '0;
+  tb_expected_tx_packet_data = '0;
+  
+  check_outputs();
+  #(CLK_PERIOD * 3);
+  tb_store_rx_packet = 1'b0;
+   
+
+  //*****************************************************************************
+  // Test Case: Get a small packet data from USB RX 
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "small RX packet data";
+  tb_test_case_num = tb_test_case_num + 1;
+  //RESET the DUT
+  reset_dut();
+  tb_expected_buffer_occupancy = 7'd0;
+  @(posedge tb_clk);
+   
+  //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b1;
+  tb_store_tx_data = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_rx_packet_data = 8'b00000010; //send one byte
+  tb_tx_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+  @(posedge tb_clk);
+  tb_store_rx_packet = 1'b0;
+  #(CLK_PERIOD/2);
+ 
+  //Check outputs
+  tb_expected_buffer_occupancy = 7'd1;
+  tb_expected_rx_data = '0;//since we are not sending any data to ahb slave
+  tb_expected_tx_packet_data = '0;
+  check_outputs();
+
+   
+  #(CLK_PERIOD * 3); 
+
+  //*****************************************************************************
+  // Test Case: Get a large packet data from USB RX
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "large RX packet data";
+  tb_test_case_num = tb_test_case_num + 1;
+  //RESET the DUT
+  reset_dut();
+  //setup packet info for debugging/verification signals
+   
+  tb_store_tx_data = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_tx_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 10; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_store_rx_packet = 1'b1;
+     tb_rx_packet_data = 8'b00000001 + i;
+     @(posedge tb_clk);
+     tb_store_rx_packet = 1'b0;
+     #(CLK_PERIOD/2); 
+     //Check outputs
+     tb_expected_buffer_occupancy = 1 + i;
+     tb_expected_rx_data = '0;
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+
+     #(CLK_PERIOD * 3);
+  end
+  
+   
+  #(CLK_PERIOD * 3); 
+  //*****************************************************************************
+  // Test Case: Write large RX data to AHB Slave
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "large RX data";
+  tb_test_case_num = tb_test_case_num + 1;
+  tb_store_rx_packet = 1'b0;
+  tb_store_tx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_tx_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 10; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_get_rx_data = 1'b1;
+     #(CLK_PERIOD/2);
+     tb_expected_rx_data = 8'd1 + i;
+     check_outputs();
+     @(posedge tb_clk);
+     tb_get_rx_data = 1'b0;
+     #(CLK_PERIOD/2);     
+     //Check outputs
+     tb_expected_buffer_occupancy = 10 - (i+1);
+     tb_expected_rx_data = 8'd0;
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+
+     #(CLK_PERIOD * 3);
+     end
+   
+  #(CLK_PERIOD * 3); 
+  //*****************************************************************************
+  // Test Case: Get a max sized packet data from USB RX
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "max sized RX packet data";
+  tb_test_case_num = tb_test_case_num + 1;
+  //RESET the DUT
+  reset_dut();
+   
+  //setup packet info for debugging/verification signals
+  tb_store_tx_data = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_tx_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 32; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_store_rx_packet = 1'b1;
+     tb_rx_packet_data = 8'b00000001 + i;
+     check_outputs();
+     @(posedge tb_clk);
+     #(CLK_PERIOD/2); 
+     //Check outputs
+     tb_expected_buffer_occupancy = 1 + i;
+     tb_expected_rx_data = '0;
+     tb_expected_tx_packet_data = '0;
+
+     tb_store_rx_packet = 1'b0;
+     #(CLK_PERIOD * 3);
+     
+  end// for (i = 0; i < 32; i = i + 1)
+  #(CLK_PERIOD * 3);
+   
+  //*****************************************************************************
+  // Test Case: Write max sized RX data to AHB Slave
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "max sized RX data";
+  tb_test_case_num = tb_test_case_num + 1;
+   
+  tb_store_rx_packet = 1'b0;
+  tb_store_tx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_tx_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+  for (i = 0; i < 32; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_get_rx_data = 1'b1;
+     tb_expected_rx_data = 8'd1 + i;     
+     #(CLK_PERIOD/2);
+     check_outputs();
+     @(posedge tb_clk);
+     tb_get_rx_data = 1'b0;
+     #(CLK_PERIOD/2);
+     //Check outputs
+     tb_expected_rx_data = '0;
+     tb_expected_buffer_occupancy = 8'd32 - (i+1);
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+     #(CLK_PERIOD * 3);
+     
+  end// for (i = 0; i < 32; i = i + 1)
+  #(CLK_PERIOD);
+   
+  //*****************************************************************************
+  // Test Case: Read small TX data from AHB Slave
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "small TX data";
+  tb_test_case_num = tb_test_case_num + 1;
+  //RESET the DUT
+  reset_dut();
+  @(posedge tb_clk);
+   
+  //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b0;
+  tb_store_tx_data = 1'b1;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_rx_packet_data = '0; 
+  tb_tx_data = 8'b01010101;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+
+  @(posedge tb_clk);
+  tb_store_tx_data = 1'b0;
+  #(CLK_PERIOD/2);
+ 
+  //Check outputs
+  tb_expected_buffer_occupancy = 7'd1;
+  tb_expected_rx_data = '0;
+  tb_expected_tx_packet_data = '0;
+  
+  check_outputs();
+  #(CLK_PERIOD * 3); 
+  //*****************************************************************************
+  // Test Case: Write small TX packet data to USB TX 
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "small TX packet data";
+  tb_test_case_num = tb_test_case_num + 1;
+  //setup packet info for debugging/verification signals
+  @(posedge tb_clk);
+  tb_store_rx_packet = 1'b0;
+  tb_store_tx_data = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b1;
+  tb_rx_packet_data = '0; 
+  tb_tx_data = 8'b01010101;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+  #(CLK_PERIOD/2);
+  //Check outputs
+  tb_expected_buffer_occupancy = 7'd1;
+  tb_expected_rx_data = '0;
+  tb_expected_tx_packet_data = 8'b01010101;
+  
+  check_outputs();
+  @(posedge tb_clk);
+  tb_get_tx_packet = 1'b0;
+  #(CLK_PERIOD); 
+  tb_expected_buffer_occupancy = 7'd0;
+  tb_expected_rx_data = '0;
+  tb_expected_tx_packet_data = '0;
+  check_outputs();
+   
+  #(CLK_PERIOD * 3); 
+  //*****************************************************************************
+  // Test Case:  Read large TX data from AHB Slave
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "large TX data";
+  tb_test_case_num = tb_test_case_num + 1;
+  //RESET the DUT
+  reset_dut();
+  //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_rx_packet_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 10; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_store_tx_data = 1'b1;
+     tb_tx_data = 8'b00000001 + i;
+     @(posedge tb_clk);
+     tb_store_tx_data = 1'b0;
+     #(CLK_PERIOD/2);
+   
+     //Check outputs
+     tb_expected_buffer_occupancy = 1 + i;
+     tb_expected_rx_data = '0;
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+
+  end
+   
+  #(CLK_PERIOD * 3); 
+  //*****************************************************************************
+  // Test Case: Write large TX packet data to USB TX 
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "large TX packet data";
+  tb_test_case_num = tb_test_case_num + 1;
+    //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_store_tx_data = 1'b0;
+  tb_rx_packet_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 10; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_get_tx_packet = 1'b1;
+     tb_expected_tx_packet_data = 8'b00000001 + i;
+     #(CLK_PERIOD/2);
+     check_outputs();
+     
+     @(posedge tb_clk);
+     tb_get_tx_packet = 1'b0; 
+     #(CLK_PERIOD/2);
+     //Check outputs
+     tb_expected_tx_packet_data = '0;
+     tb_expected_buffer_occupancy = 10 - (i+1);
+     tb_expected_rx_data = '0;
+     check_outputs();
+   end
+  
+  #(CLK_PERIOD * 3); 
+  //*****************************************************************************
+  // Test Case: Read max sized TX data from AHB Slave
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "max sized TX data";
+  tb_test_case_num = tb_test_case_num + 1;
+  //RESET the DUT
+  reset_dut();
+  //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_rx_packet_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 32; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_store_tx_data = 1'b1;
+     tb_tx_data = 8'b00000001 + i;
+     @(posedge tb_clk);
+     tb_store_tx_data = 1'b0;
+     #(CLK_PERIOD/2);
+     
+     //Check outputs
+     tb_expected_buffer_occupancy = 1 + i;
+     tb_expected_rx_data = '0;
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+  end
+ 
+  #(CLK_PERIOD * 3);
+  //*****************************************************************************
+  // Test Case: Write max sized TX packet data to USB TX 
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "max sized TX packet data";
+  tb_test_case_num = tb_test_case_num + 1;
+    //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_store_tx_data = 1'b0;
+  tb_rx_packet_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 32; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_get_tx_packet = 1'b1;
+     tb_expected_tx_packet_data = 8'd1 + i;
+     #(CLK_PERIOD/2);
+     check_outputs();
+     @(posedge tb_clk);
+     tb_get_tx_packet = 1'b0;
+     #(CLK_PERIOD/2);
+     //Check outputs
+     tb_expected_buffer_occupancy = 8'd32 - (i+1);
+     tb_expected_rx_data = '0;
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+  end
+  
+  #(CLK_PERIOD * 3);
+   //*****************************************************************************
+  // Test Case: Clear while sending TX Data to buffer
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "clear while sending TX Data to buffer";
+  tb_test_case_num = tb_test_case_num + 1;
+  //setup packet info for debugging/verification signals
+  //RESET the DUT
+  reset_dut();
+  //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_rx_packet_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 32; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_store_tx_data = 1'b1;
+     tb_tx_data = 8'b00000011 + i;
+     @(posedge tb_clk);
+     tb_store_tx_data = 1'b0;
+     #(CLK_PERIOD/2);
+     //Check outputs
+     tb_expected_buffer_occupancy = 1 + i;
+     tb_expected_rx_data = '0;
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+     #(CLK_PERIOD * 3);
+  end // for (i = 0; i < 32; i = i + 1)
+  @(posedge tb_clk);
+  tb_clear = 1'b1;
+  @(posedge tb_clk);
+  tb_clear = 1'b0;
+  tb_expected_buffer_occupancy = '0;
+  tb_expected_rx_data = '0;
+  tb_expected_tx_packet_data = '0;
+  #(CLK_PERIOD/2); 
+  check_outputs();
+ 
+  #(CLK_PERIOD * 3);
+  //*****************************************************************************
+  // Test Case: Flush while sending RX Data to buffer
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "flush while sending RX Data to buffer";
+  tb_test_case_num = tb_test_case_num + 1;
+  //setup packet info for debugging/verification signals
+  //RESET the DUT
+  reset_dut();
+  //setup packet info for debugging/verification signals
+  tb_store_rx_packet = 1'b0;
+  tb_get_rx_data = 1'b0;
+  tb_get_tx_packet = 1'b0;
+  tb_rx_packet_data = '0;
+  tb_flush = 1'b0;
+  tb_clear = 1'b0;
+   
+  for (i = 0; i < 10; i = i + 1) begin
+     @(posedge tb_clk);
+     tb_store_rx_packet = 1'b1;
+     tb_rx_packet_data = 8'b00000001 + i;
+     @(posedge tb_clk);
+     tb_store_rx_packet = 1'b0;
+     #(CLK_PERIOD/2); 
+     //Check outputs
+     tb_expected_buffer_occupancy = 1 + i;
+     tb_expected_rx_data = '0;
+     tb_expected_tx_packet_data = '0;
+     check_outputs();
+     #(CLK_PERIOD * 3);
+  end
+  @(posedge tb_clk);
+  tb_flush = 1'b1;
+  @(posedge tb_clk);
+  tb_flush = 1'b0;
+  tb_expected_buffer_occupancy = '0;
+  tb_expected_rx_data = '0;
+  tb_expected_tx_packet_data = '0;
+  #(CLK_PERIOD/2); 
+  check_outputs(); 
+  #(CLK_PERIOD * 3);  // Update Navigation Info
+
+end
+endmodule

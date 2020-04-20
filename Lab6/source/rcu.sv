@@ -19,35 +19,39 @@ module rcu
   output enable_timer
 );
   //declaration of the states
-  localparam idle = 0, clear = 1, receiving = 2, 
-	     verify = 3, waiting = 4,
-	     complete = 5;
-  reg [3:0] state;
-  reg [3:0] next_state;
+  //localparam idle = 0, clear = 1, receiving = 2, verify = 3, waiting = 4, complete = 5;
+  //can do typedef enum bit[n:0] {name of states} name for enum
+  typedef enum bit [2:0] {IDLE, CLEAR, RECEIVING, VERIFY, WAITING, COMPLETE} stateType;
+  stateType state;
+  stateType next_state;
+  //stateType out
+  //reg [3:0] state;
+  //reg [3:0] next_state;
   reg [3:0] out;
   
   //ff for next state
   always_ff @ (posedge clk, negedge n_rst) 
     begin: STATE
         if (n_rst == 1'b0)
-            state <= idle; //go to the initial state
+            state <= IDLE; //go to the initial state
         else
 	    state <= next_state;
     end
   //combinational logic for next state
   always_comb
   begin: NXT
+    next_state = state;
     case(state)
-	idle:       if (start_bit_detected)	next_state = clear;
-		    else			next_state = idle;
-	clear:	    if (!framing_error)		next_state = receiving;
-		    else			next_state = clear;
-	receiving:  if (packet_done)		next_state = verify;
-		    else			next_state = receiving;
-	verify:	    next_state = waiting;
-	waiting:    if (framing_error)		next_state = idle;
-		    else			next_state = complete;
-	complete:   next_state = idle;
+	IDLE:       if (start_bit_detected)	next_state = CLEAR;
+		    else			next_state = IDLE;
+	CLEAR:	    if (!framing_error)		next_state = RECEIVING;
+		    else			next_state = CLEAR;
+	RECEIVING:  if (packet_done)		next_state = VERIFY;
+		    else			next_state = RECEIVING;
+	VERIFY:	    next_state = WAITING;
+	WAITING:    if (framing_error)		next_state = IDLE;
+		    else			next_state = COMPLETE;
+	COMPLETE:   next_state = IDLE;
 	default:    next_state = state;
     endcase
   end
@@ -56,11 +60,11 @@ module rcu
   always_comb
   begin: OUT
     case(state)
-	idle:	   out = 4'b0000;
-        clear:     out = 4'b0100;
-	receiving: out = 4'b1000;
-	verify:    out = 4'b0010;
-	complete:  out = 4'b0001;
+	IDLE:	   out = 4'b0000;
+        CLEAR:     out = 4'b0100;
+	RECEIVING: out = 4'b1000;
+	VERIFY:    out = 4'b0010;
+	COMPLETE:  out = 4'b0001;
 	default:   out = 4'b0000;
     endcase
   end

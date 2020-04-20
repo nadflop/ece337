@@ -1,0 +1,58 @@
+// ==========================================================================
+// CRC Generation Unit - Linear Feedback Shift Register implementation
+// (c) Kay Gorontzi, GHSi.de, distributed under the terms of LGPL
+// ==========================================================================
+// $Id: $
+// File name:   16bitcalc.sv
+// Created:     4/15/2019
+// Author:      Ray Yan
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: 4.1.1
+module crc_16
+  (
+   input wire 	         clk, 
+   input wire 	         n_rst, 
+   input wire    	 bit_out,
+   input wire 	         init_crc,
+   input wire            shift_enable,
+   output wire           CRC                   // Current output CRC value
+  );
+   
+   reg    [15:0] nextCRC;                               // We need output registers
+   wire          inv;
+   
+   assign inv = bit_out ^ nextCRC[15];                   // XOR required?
+   
+   always_ff @ (posedge clk, negedge n_rst)  begin
+      if (!n_rst) begin
+         nextCRC <= '0;                                  // Init before calculation
+      end
+      else if (init_crc) begin
+	 nextCRC <= '0;
+      end
+      else if (shift_enable) begin
+         nextCRC[15] <= nextCRC[14] ^ inv;
+         nextCRC[14] <= nextCRC[13];
+         nextCRC[13] <= nextCRC[12];
+         nextCRC[12] <= nextCRC[11];
+         nextCRC[11] <= nextCRC[10];
+         nextCRC[10] <= nextCRC[9];
+         nextCRC[9] <= nextCRC[8];
+         nextCRC[8] <= nextCRC[7];
+         nextCRC[7] <= nextCRC[6];
+         nextCRC[6] <= nextCRC[5];
+         nextCRC[5] <= nextCRC[4];
+         nextCRC[4] <= nextCRC[3];
+         nextCRC[3] <= nextCRC[2];
+         nextCRC[2] <= nextCRC[1] ^ inv;
+         nextCRC[1] <= nextCRC[0];
+         nextCRC[0] <= inv;
+      end 
+      else begin
+         nextCRC <= nextCRC;
+      end
+   end
+
+    assign CRC = nextCRC[15];
+endmodule

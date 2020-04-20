@@ -39,6 +39,7 @@ module flex_stp_sr
 	if (n_rst == 1'b0) begin
 	    for (i = 0; i < NUM_BITS; i++)
 		data[i] <= 1;
+	   //or can do sth like data <= '1;
 	end
 	else begin
 	    data <= next_data;

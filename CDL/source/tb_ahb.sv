@@ -1,0 +1,563 @@
+// $Id: $
+// File name:   tb_ahb_lite_slave.sv
+// Created:     4/23/2019
+// Author:      Nur Nadhira Aqilah Binti Mohd Shah
+// Lab Section: 9999
+// Version:     1.0  Initial Design Entry
+// Description: Starter bus model based test bench for the AHB-Lite-slave module
+
+`timescale 1ns / 10ps
+
+module tb_ahb();
+
+// Timing related constants
+localparam CLK_PERIOD = 10;
+localparam BUS_DELAY  = 800ps; // Based on FF propagation delay
+
+// Sizing related constants
+localparam DATA_WIDTH      = 4;
+localparam ADDR_WIDTH      = 4;
+localparam DATA_WIDTH_BITS = DATA_WIDTH * 8;
+localparam DATA_MAX_BIT    = DATA_WIDTH_BITS - 1;
+localparam ADDR_MAX_BIT    = ADDR_WIDTH - 1;
+
+// Define our address mapping scheme via constants
+localparam ADDR_DATA_BUFFER = 7'h0;
+localparam ADDR_STATUS_BUSY = 7'h4;
+localparam ADDR_STATUS_ERR  = 7'h6;
+localparam ADDR_BUFFER_SIZE = 7'h8;
+localparam ADDR_TX_PACKET   = 7'hc;
+localparam ADDR_FLUSH_CTRL  = 7'hd; 
+   
+// AHB-Lite-Slave reset value constants
+// Student TODO: Update these based on the reset values for your config registers
+localparam RESET_COEFF  = '0;
+localparam RESET_SAMPLE = '0;
+   
+//*****************************************************************************
+// Declare TB Signals (Bus Model Controls)
+//*****************************************************************************
+// Testing setup signals
+logic                      tb_enqueue_transaction;
+logic                      tb_transaction_write;
+logic                      tb_transaction_fake;
+logic [ADDR_WIDTH-1:0]     tb_transaction_addr;
+bit [DATA_MAX_BIT:0]     tb_transaction_data [];
+logic                      tb_transaction_error;
+logic [2:0]                tb_transaction_size;
+logic [2:0]                tb_transaction_burst;
+// Testing control signal(s)
+logic    tb_enable_transactions;
+integer  tb_current_addr_transaction_num;
+integer  tb_current_addr_beat_num;
+logic    tb_current_addr_transaction_error;
+integer  tb_current_data_transaction_num;
+integer  tb_current_data_beat_num;
+logic    tb_current_data_transaction_error;
+string   tb_test_case;
+integer  tb_test_case_num;
+bit [DATA_MAX_BIT:0] tb_test_data [];
+string                 tb_check_tag;
+logic                  tb_mismatch;
+logic                  tb_check;
+logic		       tb_model_reset;
+
+//*****************************************************************************
+// General System signals
+//*****************************************************************************
+logic tb_clk;
+logic tb_n_rst;
+
+//*****************************************************************************
+// AHB-Lite-Slave side signals
+//*****************************************************************************
+logic                  tb_hsel;
+logic [1:0]            tb_htrans;
+logic [3:0]            tb_haddr;
+logic [2:0]            tb_hsize;
+logic                  tb_hwrite;
+logic [DATA_MAX_BIT:0] tb_hwdata;
+logic [DATA_MAX_BIT:0] tb_hrdata;
+logic                  tb_hresp;
+logic		       tb_hready;
+logic [2:0]                 tb_hburst;
+//*****************************************************************************
+// USB-side Signals
+//*****************************************************************************
+// From USB RX to AHB Slave
+logic [DATA_MAX_BIT-1:0]  tb_rx_packet;
+logic                   tb_rx_data_ready;
+logic                   tb_rx_transfer_active;
+logic			tb_rx_error;
+// From Data Buffer to AHB Slave
+logic [7:0]		tb_rx_data;
+logic [6:0]		tb_buffer_occupancy;
+// From AHB Slave to Data Buffer
+logic			tb_get_rx_data;
+logic			tb_store_tx_data;
+logic			tb_clear;
+logic [7:0]		tb_tx_data;
+// From USB TX to AHB Slave
+logic			tb_tx_transfer_active;
+logic			tb_tx_error;
+logic [1:0]		tb_tx_packet;
+//output
+logic			tb_d_mode;
+logic			tb_tx_en;
+// Expected value check signals
+logic                   tb_expected_d_mode;
+logic			tb_expected_tx_en;
+//*****************************************************************************
+// Clock Generation Block
+//*****************************************************************************
+always begin
+  // Start with clock low to avoid false rising edge events at t=0
+  tb_clk = 1'b0;
+  // Wait half of the clock period before toggling clock value (maintain 50% duty cycle)
+  #(CLK_PERIOD/2.0);
+  tb_clk = 1'b1;
+  // Wait half of the clock period before toggling clock value via rerunning the block (maintain 50% duty cycle)
+  #(CLK_PERIOD/2.0);
+end
+
+//*****************************************************************************
+// Bus Model Instance
+//*****************************************************************************
+ahb_lite_bus_cdl  #(  .DATA_WIDTH(4),
+                  .ADDR_WIDTH(4))
+                  BFM 
+                  (
+                  .clk(tb_clk),
+                  // Testing setup signals
+                  .enqueue_transaction(tb_enqueue_transaction),
+                  .transaction_write(tb_transaction_write),
+                  .transaction_fake(tb_transaction_fake),
+                  .transaction_addr(tb_transaction_addr),
+                  .transaction_data(tb_transaction_data),
+                  .transaction_error(tb_transaction_error),
+                  .transaction_size(tb_transaction_size),
+		  .transaction_burst(tb_transaction_burst),
+                  // Testing controls
+                  .model_reset(tb_model_reset),
+                  .enable_transactions(tb_enable_transactions),
+                  .current_addr_transaction_num(tb_current_addr_transaction_num),
+		  .current_addr_beat_num(tb_current_addr_beat_num),
+                  .current_addr_transaction_error(tb_current_addr_transaction_error),
+		  .current_data_transaction_num(tb_current_data_transaction_num),
+	          .current_data_beat_num(tb_current_data_beat_num),
+		  .current_data_transaction_error(tb_current_data_transaction_error),
+                  // AHB-Lite-Slave Side
+                  .hsel(tb_hsel),
+                  .htrans(tb_htrans),
+                  .hburst(tb_hburst),
+                  .haddr(tb_haddr),
+                  .hsize(tb_hsize),
+                  .hwrite(tb_hwrite),
+                  .hwdata(tb_hwdata),
+                  .hrdata(tb_hrdata),
+                  .hresp(tb_hresp),
+                  .hready(tb_hready));
+
+
+//*****************************************************************************
+// DUT Instance
+//*****************************************************************************
+ahb DUT (.clk(tb_clk), .n_rst(tb_n_rst),
+                    // AHB-Lite-Slave bus signals
+		    .rx_error(tb_rx_error),
+		    .rx_data_ready(tb_rx_data_ready),
+		    .rx_trans_active(tb_rx_transfer_active),
+		    .buffer_occupancy(tb_buffer_occupancy),
+		    .rx_data(tb_rx_data),
+                    .tx_trans_active(tb_tx_transfer_active),
+		    .tx_error(tb_tx_error),
+		    .tx_en(tb_tx_en),
+                    .hsel(tb_hsel),
+                    .htrans(tb_htrans),
+                    .haddr(tb_haddr[3:0]),
+                    .hsize(tb_hsize[1:0]),
+                    .hwrite(tb_hwrite),
+                    .hwdata(tb_hwdata),
+                    .hrdata(tb_hrdata),
+                    .hresp(tb_hresp),
+		    .hready(tb_hready),
+		    .dmode(tb_d_mode),
+		    .get_rx_data(tb_get_rx_data),
+		    .store_tx_data(tb_store_tx_data),
+		    .tx_data(tb_tx_data),
+		    .clear(tb_clear),
+		    .tx_packet(tb_tx_packet));
+
+//*****************************************************************************
+// DUT Related TB Tasks
+//*****************************************************************************
+// Task for standard DUT reset procedure
+task reset_dut;
+begin
+  // Activate the reset
+  tb_n_rst = 1'b0;
+
+  // Maintain the reset for more than one cycle
+  @(posedge tb_clk);
+  @(posedge tb_clk);
+
+  // Wait until safely away from rising edge of the clock before releasing
+  @(negedge tb_clk);
+  tb_n_rst = 1'b1;
+
+  // Leave out of reset for a couple cycles before allowing other stimulus
+  // Wait for negative clock edges, 
+  // since inputs to DUT should normally be applied away from rising clock edges
+  @(negedge tb_clk);
+  @(negedge tb_clk);
+end
+endtask
+   
+//*****************************************************************************
+// Bus Model Usage Related TB Tasks
+//*****************************************************************************
+// Task to pulse the reset for the bus model
+task reset_model;
+begin
+  tb_model_reset = 1'b1;
+  #(0.1);
+  tb_model_reset = 1'b0;
+end
+endtask
+
+// Task to enqueue a new transaction
+task enqueue_transaction;
+  input logic for_dut;
+  input logic write_mode;
+  input logic [ADDR_MAX_BIT:0] address;
+  input bit [DATA_MAX_BIT:0] data [];
+  input logic expected_error;
+  input logic [1:0] size;
+begin
+  // Make sure enqueue flag is low (will need a 0->1 pulse later)
+  tb_enqueue_transaction = 1'b0;
+  #0.1ns;
+
+  // Setup info about transaction
+  tb_transaction_fake  = ~for_dut;
+  tb_transaction_write = write_mode;
+  tb_transaction_addr  = {3'd0,address};
+  tb_transaction_data  = data;
+  tb_transaction_error = expected_error;
+  tb_transaction_size  = {1'b0,size};
+  tb_transaction_burst = 3'b000;//should always be 0 since this design doesn't use any burst signal
+
+  // Pulse the enqueue flag
+  tb_enqueue_transaction = 1'b1;
+  #0.1ns;
+  tb_enqueue_transaction = 1'b0;
+end
+endtask
+
+// Task to wait for multiple transactions to happen
+task execute_transactions;
+  input integer num_transactions;
+  integer wait_var;
+begin
+  // Activate the bus model
+  tb_enable_transactions = 1'b1;
+  @(posedge tb_clk);
+
+  // Process the transactions (all but last one overlap 1 out of 2 cycles
+  for(wait_var = 0; wait_var < num_transactions; wait_var++) begin
+    @(posedge tb_clk);
+  end
+
+  // Run out the last one (currently in data phase)
+  @(posedge tb_clk);
+
+  // Turn off the bus model
+  @(negedge tb_clk);
+  tb_enable_transactions = 1'b0;
+end
+endtask
+
+// Task to clear/initialize all USB-side inputs
+task init_fir_side;
+begin
+  tb_rx_data_ready  = 1'b0;
+  tb_rx_transfer_active  = 1'b0;
+  tb_rx_error       = 1'b0;
+  tb_tx_transfer_active = 1'b0;
+  tb_tx_error = 1'b0;
+end
+endtask
+
+// Task to clear/initialize all FIR-side inputs
+task init_expected_outs;
+begin
+  tb_expected_data_ready    = 1'b0;
+  tb_expected_sample        = RESET_SAMPLE;
+  tb_expected_new_coeff_set = 1'b0;
+  tb_expected_coeff         = RESET_COEFF;
+end
+endtask
+
+//*****************************************************************************
+//*****************************************************************************
+// Main TB Process
+//*****************************************************************************
+//*****************************************************************************
+initial begin
+  // Initialize Test Case Navigation Signals
+  tb_test_case       = "Initilization";
+  tb_test_case_num   = -1;
+  tb_test_data       = new[1];
+  tb_check_tag       = "N/A";
+  tb_check           = 1'b0;
+  tb_mismatch        = 1'b0;
+  // Initialize all of the directly controled DUT inputs
+  tb_n_rst          = 1'b1;
+//  init_fir_side();
+  // Initialize all of the bus model control inputs
+  tb_model_reset          = 1'b0;
+  tb_enable_transactions  = 1'b0;
+  tb_enqueue_transaction  = 1'b0;
+  tb_transaction_write    = 1'b0;
+  tb_transaction_fake     = 1'b0;
+  tb_transaction_addr     = '0;
+  tb_transaction_data     = new[1];
+  tb_transaction_error    = 1'b0;
+  tb_transaction_size     = 3'd0;
+  tb_transaction_burst    = 3'd0;
+
+  // Wait some time before starting first test case
+  #(0.1);
+
+  // Clear the bus model
+  reset_model();
+
+  //*****************************************************************************
+  // Power-on-Reset Test Case
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Power-on-Reset";
+  tb_test_case_num = tb_test_case_num + 1;
+  
+  // Reset the DUT
+  reset_dut();
+
+  // Check outputs for reset state
+  //check_outputs("after DUT reset");
+  enqueue_transaction(1'b1, 1'b0, ADDR_DATA_BUFFER, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_DATA_BUFFER + 1, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_DATA_BUFFER + 2, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_DATA_BUFFER + 3, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_STATUS_BUSY, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_STATUS_BUSY+1, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_STATUS_ERR, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_BUFFER_SIZE, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_TX_PACKET, '{16'h00}, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_FLUSH_CTRL, '{16'h00}, 1'b0, 2'd0);
+  execute_transactions(10);
+  #(CLK_PERIOD * 3);   
+
+  //*****************************************************************************
+  // Test Case: Singleton Write (4 bytes)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Single Word Write (4B)";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //Reset the DUT
+  reset_dut();
+  // Enqueue the needed transactions (Low Coeff Address => F0, just add 2 x index)
+  tb_test_data = '{32'd1000};
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_DATA_BUFFER, tb_test_data, 1'b0, 2'd2);
+  // Enque the read to read buffer
+  enqueue_transaction(1'b1, 1'b0, ADDR_BUFFER_SIZE, '{8'd4}, 1'b0, 2'd0); 
+  // Run the transactions via the model
+  execute_transactions(2);
+  #(CLK_PERIOD * 3);
+  //*****************************************************************************
+  // Test Case: Singleton Write (2 bytes)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Single Word Write (2B)";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //Reset the DUT
+  reset_dut();
+  // Enqueue the needed transactions (Low Coeff Address => F0, just add 2 x index)
+  tb_test_data = '{16'd2300};
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_DATA_BUFFER, tb_test_data, 1'b0, 2'd1);
+  // Enque the read to read buffer
+  enqueue_transaction(1'b1, 1'b0, ADDR_BUFFER_SIZE, {8'd2}, 1'b0, 2'd0); 
+  // Run the transactions via the model
+  execute_transactions(2);
+  #(CLK_PERIOD * 3);
+    //*****************************************************************************
+  // Test Case: Singleton Write (1 byte)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Single Word Write (1B)";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //Reset the DUT
+  reset_dut();
+  // Enqueue the needed transactions (Low Coeff Address => F0, just add 2 x index)
+  tb_test_data = '{8'd121};
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_DATA_BUFFER, tb_test_data, 1'b0, 2'd0);
+  // Enque the read to read buffer
+  enqueue_transaction(1'b1, 1'b0, ADDR_BUFFER_SIZE, {8'd1}, 1'b0, 2'd0); 
+  // Run the transactions via the model
+  execute_transactions(2);
+  #(CLK_PERIOD * 3);
+      
+  //*****************************************************************************
+  // Test Case: Back-to-Back Write/Read (1 BYTE)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Back-to-Back Write/Read (1B)";
+  tb_test_case_num = tb_test_case_num + 1;
+  
+  // Reset DUT
+  reset_dut();
+  // Enqueue the needed transactions
+  tb_test_data = '{8'h70};
+
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_DATA_BUFFER, tb_test_data, 1'b0, 2'd0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_DATA_BUFFER, tb_test_data, 1'b0, 2'd0);
+   
+  // Run the transactions via the model
+  execute_transactions(2);
+  #(CLK_PERIOD * 3);
+  //*****************************************************************************
+  // Test Case: Back-to-Back Write/Read (2 BYTES)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Back-to-Back Write/Read (2B)";
+  tb_test_case_num = tb_test_case_num + 1;
+  
+  // Reset DUT
+  reset_dut();
+  // Enqueue the needed transactions
+  tb_test_data = '{16'h993D};
+
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_DATA_BUFFER, tb_test_data, 1'b0, 2'd2);
+  enqueue_transaction(1'b1, 1'b0, ADDR_DATA_BUFFER, tb_test_data, 1'b0, 2'd2);
+   
+  // Run the transactions via the model
+  execute_transactions(2);
+  #(CLK_PERIOD * 3);   
+   //*****************************************************************************
+  // Test Case: Back-to-Back Write/Read (4 BYTES)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Back to back Write/Read (4B)";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  // Reset the DUT to isolate from prior test case
+  reset_dut();
+
+  // Enqueue the needed transactions
+  tb_test_data = '{32'hADAD8000};
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, 8'd70, tb_test_data, 1'b0, 2'd2);
+  // Enqueue the 'check' read
+  enqueue_transaction(1'b1, 1'b0, 8'd70, tb_test_data, 1'b0, 2'd2);
+  
+  // Run the transactions via the model
+  execute_transactions(2);
+   
+  //*****************************************************************************
+  // Test Case: Errenous Singleton Write (4 BYTES)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Erroneous Single Word Write (4B)";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //reset DUT
+  reset_dut(); 
+  
+  tb_test_data = '{32'd1000}; 
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_STATUS_BUSY, tb_test_data, 1'b1, 2'd2);
+   
+  // Run the transactions via the model
+  execute_transactions(1);
+  #(CLK_PERIOD * 3);
+  
+  //*****************************************************************************
+  // Test Case: Errenous Singleton Write (2 BYTES)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Erroneous Single Word Write (2B)";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //reset DUT
+  reset_dut(); 
+  
+  tb_test_data = '{16'hABCD}; 
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_STATUS_ERR, tb_test_data, 1'b1, 2'd1);
+   
+  // Run the transactions via the model
+  execute_transactions(1);
+  #(CLK_PERIOD * 3);
+   //*****************************************************************************
+  // Test Case: Errenous Singleton Write (1 BYTES)
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Erroneous Single Word Write (1B)";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //reset DUT
+  reset_dut(); 
+  
+  tb_test_data = '{8'hA9}; 
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_STATUS_ERR, tb_test_data, 1'b1, 2'd0);
+   
+  // Run the transactions via the model
+  execute_transactions(1);
+  #(CLK_PERIOD * 3);
+   
+  //*****************************************************************************
+  // Test Case: Direct Access to unused address
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Direct access to unused address";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //reset DUT
+  reset_dut(); 
+  
+  tb_test_data = '{16'hABCD}; 
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b1, ADDR_FLUSH_CTRL+2, tb_test_data, 1'b1, 2'd1);
+   
+  // Run the transactions via the model
+  execute_transactions(1);
+  #(CLK_PERIOD * 3);
+    //*****************************************************************************
+  // Test Case: Indirect Access to unused address
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "Indirect access to unused address";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  //reset DUT
+  reset_dut(); 
+  
+  tb_test_data = '{16'hABCD}; 
+  // Enqueue the write
+  enqueue_transaction(1'b1, 1'b0, ADDR_FLUSH_CTRL, tb_test_data, 1'b0, 2'd1);  
+  // Run the transactions via the model
+  execute_transactions(1);
+  #(CLK_PERIOD * 3);
+  
+end
+
+endmodule
+

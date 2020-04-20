@@ -1,0 +1,101 @@
+// $Id: $
+// File name:   ahb_top.sv
+// Created:     4/22/2019
+// Author:      Ray Yan
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: 4.1.1
+module ahb_lite_soc
+(
+	input wire clk,
+	input wire n_rst,
+	input wire hsel,
+	input wire [3:0] haddr,
+	input wire [1:0] hsize, //0 is one byte, 1 is two bytes, 2 is four bytes
+	input wire [1:0] htrans,
+	input wire hwrite,
+	input wire [31:0] hwdata,
+
+	output reg [31:0] hrdata,
+	output reg hresp,
+	output reg hready,
+	output reg tx_en,
+
+	//input wire [3:0] rx_packet,
+	//input wire rx_data_ready,
+	//input wire rx_trans_active,
+	//input wire rx_error,
+//--------------------
+	//input wire flush,
+	//input [7:0] rx_packet_data,
+	//input wire store_rx_packet,
+	//output reg [6:0] buffer_occupancy,
+	//input wire get_tx_packet,
+	//output reg [7:0] tx_packet_data
+);
+
+reg [7:0] rx_data;
+reg [7:0] tx_data;
+reg [1:0] tx_packet;
+reg get_rx_data;
+reg store_tx_data;
+reg clear;
+
+reg [3:0] rx_packet;
+reg rx_data_ready;
+reg rx_trans_active;
+reg rx_error;
+reg flush;
+reg [7:0] rx_packet_data;
+reg store_rx_packet;
+reg [6:0] buffer_occupancy;
+reg get_tx_packet;
+reg [7:0] tx_packet_data;
+
+ahb SLAVE
+(
+	.clk(clk),
+	.n_rst(n_rst),
+	.rx_error(rx_error),
+	.rx_packet(rx_packet),
+	.rx_data_ready(rx_data_ready),
+	.rx_trans_active(rx_trans_active),
+	.buffer_occupancy(buffer_occupancy),
+	.rx_data(rx_data),
+	.tx_trans_active(tx_trans_active),
+	.tx_error(tx_error),
+	.tx_en(tx_en),
+	.hsel(hsel),
+	.haddr(haddr),
+	.hsize(hsize),
+	.htrans(htrans),
+	.hwrite(hwrite),
+	.hwdata(hwdata),
+	.hrdata(hrdata),
+	.hresp(hresp),
+	.hready(hready),
+	.d_mode(d_mode),
+	.get_rx_data(get_rx_data),
+	.store_tx_data(store_tx_data),
+	.tx_data(tx_data),
+	.clear(clear),
+	.tx_packet(tx_packet)
+);
+
+databuffer BUFFER
+(
+	.clk(clk),
+	.n_rst(n_rst),
+	.store_rx_packet(store_rx_packet),
+	.store_tx_data(store_tx_data),
+	.get_rx_data(get_rx_data),
+	.get_tx_packet(get_tx_packet),
+	.rx_packet_data(rx_packet_data),
+	.tx_data(tx_data),
+	.flush(flush),
+	.clear(clear),
+	.tx_packet_data(tx_packet_data),
+	.rx_data(rx_data),
+	.buffer_occupancy(buffer_occupancy)	
+);
+endmodule

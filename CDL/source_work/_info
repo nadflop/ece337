@@ -1,0 +1,114 @@
+m255
+K4
+z2
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 d/home/ecegrid/a/mg12/Desktop/mg64/ece337/CDL
+T_opt
+!s110 1574809242
+Vm`I_aabWdR`7a7mH3Ub=73
+04 15 4 work tb_ahb_lite_soc fast 0
+=1-509a4c0c58a4-5dddae99-c49b9-2ca9
+o-quiet -auto_acc_if_foreign -work source_work -L /home/ecegrid/a/ece337/Course_Prod/Cell_Libs/AMI_05/vhdl_work -L /home/ecegrid/a/ece337/Class0.5u/GOLD_LIB -Lf /home/ecegrid/a/ece337/Course_Prod/IP_Libs/Lab_IP_Lib/Vsim +acc
+n@_opt
+OL;O;10.3b;59
+vahb
+Z1 DXx6 sv_std 3 std 0 22 <EOTafDcUY:cQeO^ICn]m3
+Z2 !s110 1574809183
+!i10b 1
+!s100 h;515;AnmJCQ4KF`zfMJa3
+InN^b_>OUPI<aGkKOFEQkJ2
+Z3 V`JN@9S9cnhjKRR_L]QIcM3
+!s105 ahb_sv_unit
+S1
+R0
+w1556130791
+8source/ahb.sv
+Fsource/ahb.sv
+L0 8
+Z4 OL;L;10.3b;59
+r1
+!s85 0
+31
+!s108 1574809183.364856
+!s107 source/ahb.sv|
+!s90 -sv|-work|source_work|source/ahb.sv|
+!i113 0
+Z5 o-sv -work source_work
+Z6 tCoverage 63 CoverExcludeDefault 1 CoverOpt 1 CoverShortCircuit 0
+vahb_lite_soc
+R1
+R2
+!i10b 1
+!s100 TBFULf4T[Wo2CmRgiN]Ck3
+I<Ym:JbWRUfb`>T9QUjIjX0
+R3
+!s105 ahb_lite_soc_sv_unit
+S1
+R0
+w1556130800
+8source/ahb_lite_soc.sv
+Fsource/ahb_lite_soc.sv
+L0 8
+R4
+r1
+!s85 0
+31
+!s108 1574809182.719357
+!s107 source/ahb_lite_soc.sv|
+!s90 -sv|-work|source_work|source/ahb_lite_soc.sv|
+!i113 0
+R5
+R6
+vdata_buffer
+R1
+!s110 1574809237
+!i10b 1
+!s100 Z8Vke`Oe]FGGN7VEiM3_03
+IPoAJE;Ee^cBA8oX16^40l0
+R3
+!s105 data_buffer_sv_unit
+S1
+R0
+w1556130809
+8source/data_buffer.sv
+Fsource/data_buffer.sv
+L0 8
+R4
+r1
+!s85 0
+31
+!s108 1574809237.300266
+!s107 source/data_buffer.sv|
+!s90 -sv|-work|source_work|source/data_buffer.sv|
+!i113 0
+R5
+R6
+vtb_ahb_lite_soc
+R1
+R2
+!i10b 1
+!s100 Xkm@WVR?9I7N1HT2[9QiC1
+I@dECQ6MN4d1LiS[2@^;>V1
+R3
+!s105 tb_ahb_lite_soc_sv_unit
+S1
+R0
+w1556074074
+8source/tb_ahb_lite_soc.sv
+Fsource/tb_ahb_lite_soc.sv
+L0 11
+R4
+r1
+!s85 0
+31
+!s108 1574809183.146619
+!s107 source/tb_ahb_lite_soc.sv|
+!s90 -sv|-work|source_work|source/tb_ahb_lite_soc.sv|
+!i113 0
+R5
+R6

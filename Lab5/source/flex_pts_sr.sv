@@ -12,12 +12,12 @@ module flex_pts_sr
     parameter SHIFT_MSB = 1
 )
 (
-    input clk,
-    input n_rst,
-    input shift_enable,
-    input load_enable,
-    input [NUM_BITS-1:0] parallel_in,
-    output serial_out
+    input wire clk,
+    input wire n_rst,
+    input wire shift_enable,
+    input wire load_enable,
+    input wire [NUM_BITS-1:0] parallel_in,
+    output wire serial_out
 );
     reg [NUM_BITS-1:0] next_data;
     reg [NUM_BITS-1:0] data;
@@ -43,6 +43,7 @@ module flex_pts_sr
 	if (n_rst == 1'b0) begin
 	    for (i = 0; i < NUM_BITS; i++)
 		data[i] <= 1;
+	   //or can do something like data <= '1;
 	end
 	else begin
 	    data <= next_data;

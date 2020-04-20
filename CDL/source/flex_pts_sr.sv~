@@ -1,0 +1,87 @@
+// $Id: $
+// File name:   flex_pts_sr.sv
+// Created:     2/10/2019
+// Author:      Nur Nadhira Aqilah Binti Mohd Shah
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: parallel to serial shift register design for usb tx
+
+module flex_pts_sr
+#(
+    parameter NUM_BITS = 4,
+    parameter SHIFT_MSB = 1
+)
+(
+    input wire clk,
+    input wire n_rst,
+    input wire shift_enable,
+    input wire load_sync,
+    input wire load_pid_data,
+    input wire load_data,
+    input wire load_ack,
+    input wire load_nack,
+    input wire load_stall,
+    input wire load_eop,
+    input wire load_crc1,
+    input wire load_crc2,
+    input wire [NUM_BITS-1:0] tx_packet_data,
+    output wire serial_out
+);
+    reg [NUM_BITS-1:0] next_data;
+    reg [NUM_BITS-1:0] data;
+    int i;
+    reg out;
+   
+    always_comb
+    begin: SHIFT 
+	if (load_sync == 1'b1)
+	    next_data = 8'b10000000;
+	else if (load_pid_data == 1'b1) 
+	    next_data = 8'b00111100;
+	else if (load_data == 1'b1)
+	    next_data = tx_packet_data;
+	else if (load_ack == 1'b1)
+	    next_data = 8'b10110100;
+	else if (load_nack == 1'b1)
+	    next_data = 8'b10100101;
+	else if (load_stall == 1'b1)
+	    next_data = 8'b10000111;
+	else if (load_eop == 1'b1)
+	    next_data = 8'b00000000;
+	else if (load_crc1 == 1'b1)
+	    next_data = 8'b00000000;
+	else if (load_crc2 == 1'b1)
+	    next_data = 8'b00000000;
+	//TODO: Values for load crc1 and load crc 2
+	else if (shift_enable == 1'b1) begin
+	    if (SHIFT_MSB == 1'b1)
+		next_data = {data[NUM_BITS-2:0], 1'b0}; //it was n_rst
+	    else
+		next_data = {1'b0, data[NUM_BITS-1:1]};//it was n_rst
+	end
+	else
+	    next_data = data;
+    end
+
+    always_ff @ (posedge clk, negedge n_rst) 
+    begin: REG
+	if (n_rst == 1'b0) begin
+	    for (i = 0; i < NUM_BITS; i++)
+		data[i] <= 1;
+	end
+	else begin
+	    data <= next_data;
+	end
+    end
+
+    always_comb
+    begin: OUT
+	if (SHIFT_MSB == 1'b1)
+    	    out = data[NUM_BITS-1];
+    	else
+	    out = data[0];
+    end
+    assign serial_out = out;
+
+endmodule
+    

@@ -1,0 +1,36 @@
+// $Id: $
+// File name:   bit_stuffer.sv
+// Created:     2/26/2019
+// Author:      Nur Nadhira Aqilah Binti Mohd Shah
+// Lab Section: 2
+// Version:     1.0  Initial Design Entry
+// Description: bit stuffer for usb tx
+
+module bit_stuffer
+(
+    input wire clk,
+    input wire n_rst,
+    input wire cnt_up,
+    input wire clear,
+    input wire serial_out,
+    output reg one_k_samples
+);
+
+    wire [9:0] o;
+    flex_counter #(
+    	.NUM_CNT_BITS(3)
+    )
+    CORE (
+	.clk(clk),
+	.n_rst(n_rst),
+	.clear(clear),
+	.count_enable(cnt_up),
+	.rollover_val(3'd6),
+	.count_out(o),
+	.rollover_flag(one_k_samples)
+    );
+
+
+
+endmodule
+

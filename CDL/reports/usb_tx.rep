@@ -1,0 +1,122 @@
+Information: Updating design information... (UID-85)
+ 
+****************************************
+Report : timing
+        -path full
+        -delay max
+        -max_paths 1
+Design : usb_tx
+Version: K-2015.06-SP1
+Date   : Sun Apr 28 15:30:41 2019
+****************************************
+
+Operating Conditions: typical   Library: osu05_stdcells
+Wire Load Model Mode: top
+
+  Startpoint: CONTROLLER/state_reg[0]
+              (rising edge-triggered flip-flop)
+  Endpoint: tx_transfer_active
+            (output port)
+  Path Group: (none)
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  CONTROLLER/state_reg[0]/CLK (DFFSR)                     0.00       0.00 r
+  CONTROLLER/state_reg[0]/Q (DFFSR)                       0.97       0.97 f
+  CONTROLLER/U128/Y (INVX1)                               0.42       1.39 r
+  CONTROLLER/U113/Y (NOR2X1)                              0.27       1.66 f
+  CONTROLLER/U112/Y (INVX1)                               0.23       1.89 r
+  CONTROLLER/U111/Y (NOR2X1)                              0.44       2.33 f
+  CONTROLLER/U110/Y (INVX1)                               0.16       2.49 r
+  CONTROLLER/U105/Y (NAND3X1)                             0.08       2.57 f
+  CONTROLLER/U91/Y (NOR2X1)                               0.15       2.72 r
+  CONTROLLER/U63/Y (NAND3X1)                              0.06       2.78 f
+  CONTROLLER/tx_transfer_active (tx_controller)           0.00       2.78 f
+  tx_transfer_active (out)                                0.00       2.78 f
+  data arrival time                                                  2.78
+  --------------------------------------------------------------------------
+  (Path is unconstrained)
+
+
+1
+ 
+****************************************
+Report : area
+Design : usb_tx
+Version: K-2015.06-SP1
+Date   : Sun Apr 28 15:30:41 2019
+****************************************
+
+Library(s) Used:
+
+    osu05_stdcells (File: /package/eda/cells/OSU/v2.7/synopsys/lib/ami05/osu05_stdcells.db)
+
+Number of ports:                          155
+Number of nets:                           563
+Number of cells:                          438
+Number of combinational cells:            330
+Number of sequential cells:                99
+Number of macros/black boxes:               0
+Number of buf/inv:                         78
+Number of references:                       6
+
+Combinational area:              85095.000000
+Buf/Inv area:                    11232.000000
+Noncombinational area:           72864.000000
+Macro/Black Box area:                0.000000
+Net Interconnect area:      undefined  (No wire load specified)
+
+Total cell area:                157959.000000
+Total area:                 undefined
+1
+Loading db file '/package/eda/cells/OSU/v2.7/synopsys/lib/ami05/osu05_stdcells.db'
+Information: Propagating switching activity (low effort zero delay simulation). (PWR-6)
+Warning: There is no defined clock in the design. (PWR-80)
+Warning: Design has unannotated primary inputs. (PWR-414)
+Warning: Design has unannotated sequential cell outputs. (PWR-415)
+ 
+****************************************
+Report : power
+        -hier
+        -analysis_effort low
+Design : usb_tx
+Version: K-2015.06-SP1
+Date   : Sun Apr 28 15:30:42 2019
+****************************************
+
+
+Library(s) Used:
+
+    osu05_stdcells (File: /package/eda/cells/OSU/v2.7/synopsys/lib/ami05/osu05_stdcells.db)
+
+
+Operating Conditions: typical   Library: osu05_stdcells
+Wire Load Model Mode: top
+
+
+Global Operating Voltage = 5    
+Power-specific unit information :
+    Voltage Units = 1V
+    Capacitance Units = 1.000000pf
+    Time Units = 1ns
+    Dynamic Power Units = 1mW    (derived from V,C,T units)
+    Leakage Power Units = 1nW
+
+
+--------------------------------------------------------------------------------
+                                       Switch   Int      Leak     Total
+Hierarchy                              Power    Power    Power    Power    %
+--------------------------------------------------------------------------------
+usb_tx                                    1.339    6.870   48.555    8.208 100.0
+  crc (crc_16)                            0.125    1.829   10.660    1.955  23.8
+  encode (tx_encoder)                  4.52e-03    0.241    2.065    0.246   3.0
+  SHIFT_REG (tx_flex_pts_sr_NUM_BITS8_SHIFT_MSB0)
+                                          0.317    1.700    7.385    2.017  24.6
+  BIT_STUFF (tx_bit_stuffer)           2.27e-02    0.420    5.008    0.443   5.4
+    CORE (flex_counter_NUM_CNT_BITS3)  1.99e-02    0.419    4.860    0.439   5.3
+  TIMER (tx_timer)                        0.128    1.080   12.854    1.208  14.7
+    PCKT (flex_counter_0)              5.47e-02    0.526    6.427    0.581   7.1
+    SHIFT (flex_counter_1)             7.37e-02    0.554    6.427    0.628   7.6
+  CONTROLLER (tx_controller)              0.741    1.598   10.583    2.339  28.5
+1
